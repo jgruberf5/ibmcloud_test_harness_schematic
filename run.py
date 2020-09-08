@@ -357,8 +357,10 @@ def run_test(test_path):
             os.makedirs(ERRORED_DIR, exist_ok=True)
             shutil.move(test_dir, os.path.join(ERRORED_DIR, test_id))
         else:
+            LOG.error('removing test directory %s', test_dir)
             shutil.rmtree(test_dir)
         return
+    
     # workspace complete pool for return
     results = poll_report(test_id)
     if not results:
