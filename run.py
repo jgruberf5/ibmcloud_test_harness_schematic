@@ -338,6 +338,7 @@ def run_test(test_path):
                 shutil.rmtree(test_dir)
             return
     else:
+        LOG.error('failed to create workspace: %s', status)
         start_report(test_id, start_data)
         results = {
             "terraform_failed": "workspace create failed with status %s" % status
