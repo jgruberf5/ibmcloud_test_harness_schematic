@@ -282,7 +282,7 @@ def run_test(test_path):
     with open(os.path.join(test_dir, 'service_endpoint.url'), 'r') as eu:
         url = eu.read()
     data = "{}"
-    with open(os.path.join(test_dir, 'create_data.json'), 'r') as cdf:
+    with open(os.path.join(test_dir, 'create_data.json'), 'rb') as cdf:
         data = cdf.read()
     start_data = {
         'zone': zone,
