@@ -233,9 +233,7 @@ def build_utility():
                                     CONFIG['report_service_base_url'], test_id)
                                 }
                             )
-                            create_template_file = os.path.join(test_dir, 'create_data.json')
-                            LOG.info('writing out schematic create template: %s', create_template_file)
-                            with open(create_template_file, 'w') as cdata:
+                            with open(os.path.join(test_dir, 'create_data.json'), 'w') as cdata:
                                 cdata.write(json.dumps(
                                     regional_template, indent=4, separators=(',', ': ')))
                             with open(os.path.join(test_dir, 'service_endpoint.url'), 'w') as se:
@@ -279,107 +277,105 @@ def build_byol():
                         for sstr in CONFIG['profile_selection']:
                             if image.find(sstr) > 0:
                                 size = CONFIG['profile_selection'][sstr]
-                        temp_types = os.listdir(image_dir)
-                        for temp_type in temp_types:
-                            regional_template = schematics_regions[region_from_zone(
-                                zone)]['create_template'].copy()
-                            regional_endpoint = schematics_regions[region_from_zone(
-                                zone)]['endpoint_url']
-                            temp_dir = os.path.join(image_dir, temp_type)
-                            test_id = str(uuid.uuid4())
-                            test_dir = os.path.join(temp_dir, test_id)
-                            # LOG.info('creating test: %s' % test_dir)
-                            os.mkdir(test_dir)
-                            regional_template['template_data'][0]['variablestore'].append(
-                                {"name": "instance_name", "value": "t-%s" % test_id}
-                            )
-                            regional_template['template_data'][0]['variablestore'].append(
-                                {"name": "tmos_image_name", "value": image}
-                            )
-                            regional_template['template_data'][0]['variablestore'].append(
-                                {"name": "instance_profile", "value": size}
-                            )
-                            ssh_key_name = zone_resources[zone]['ssh_key_name']['value']
-                            if 'global_ssh_key' in CONFIG and CONFIG['global_ssh_key']:
-                                ssh_key_name = CONFIG['global_ssh_key']
-                            regional_template['template_data'][0]['variablestore'].append(
-                                {"name": "ssh_key_name", "value": ssh_key_name}
-                            )
-                            regional_template['template_data'][0]['variablestore'].append(
-                                {"name": "license_type", "value": "utilitypool"}
-                            )
-                            regional_template['template_data'][0]['variablestore'].append(
-                                {"name": "byol_license_basekey", "value": None}
-                            )
-                            regional_template['template_data'][0]['variablestore'].append(
-                                {"name": "license_host",
-                                    "value": CONFIG['zone_license_hosts'][zone]['license_host']}
-                            )
-                            regional_template['template_data'][0]['variablestore'].append(
-                                {"name": "license_username",
-                                    "value": CONFIG['zone_license_hosts'][zone]['license_username']}
-                            )
-                            regional_template['template_data'][0]['variablestore'].append(
-                                {"name": "license_password",
-                                    "value": CONFIG['zone_license_hosts'][zone]['license_password']}
-                            )
-                            regional_template['template_data'][0]['variablestore'].append(
-                                {"name": "license_pool",
-                                    "value": CONFIG['zone_license_hosts'][zone]['license_pool']}
-                            )
-                            regional_template['template_data'][0]['variablestore'].append(
-                                {"name": "license_sku_keyword_1",
-                                    "value": CONFIG['zone_license_hosts'][zone]['license_sku_keyword_1']}
-                            )
-                            regional_template['template_data'][0]['variablestore'].append(
-                                {"name": "license_sku_keyword_2",
-                                    "value": CONFIG['zone_license_hosts'][zone]['license_sku_keyword_2']}
-                            )
-                            regional_template['template_data'][0]['variablestore'].append(
-                                {"name": "license_unit_of_measure",
-                                    "value": CONFIG['zone_license_hosts'][zone]['license_unit_of_measure']}
-                            )
-                            regional_template['template_data'][0]['variablestore'].append(
-                                {"name": "tmos_admin_password", "value": "f5C0nfig"}
-                            )
-                            regional_template['template_data'][0]['variablestore'].append(
-                                {"name": "management_subnet_id",
-                                    "value": zone_resources[zone]['f5_management_id']['value']}
-                            )
-                            regional_template['template_data'][0]['variablestore'].append(
-                                {"name": "data_1_1_subnet_id",
-                                    "value": zone_resources[zone]['f5_cluster_id']['value']}
-                            )
-                            regional_template['template_data'][0]['variablestore'].append(
-                                {"name": "data_1_2_subnet_id",
-                                    "value": zone_resources[zone]['f5_internal_id']['value']}
-                            )
-                            regional_template['template_data'][0]['variablestore'].append(
-                                {"name": "data_1_3_subnet_id",
-                                    "value": zone_resources[zone]['f5_external_id']['value']}
-                            )
-                            regional_template['template_data'][0]['variablestore'].append(
-                                {"name": "data_1_4_subnet_id", "value": None}
-                            )
-                            regional_template['template_data'][0]['variablestore'].append(
-                                {"name": "phone_home_url", "value": "%s/stop/%s" % (
-                                    CONFIG['report_service_base_url'], test_id)
-                                 }
-                            )
-                            regional_template['template_data'][0]['variablestore'].append(
-                                {"name": "template_version", "value": "09082020"}
-                            )
-                            regional_template['template_data'][0]['variablestore'].append(
-                                {"name": "app_id", "value": "%s/report/%s" % (
-                                    CONFIG['report_service_base_url'], test_id)
-                                 }
-                            )
-                            with open(os.path.join(test_dir, 'create_data.json'), 'w') as cdata:
-                                cdata.write(json.dumps(
-                                    regional_template, indent=4, separators=(',', ': ')))
-                            with open(os.path.join(test_dir, 'service_endpoint.url'), 'w') as se:
-                                se.write(regional_endpoint)
-                            test_map[zone]['test_to_create'] = test_map[zone]['test_to_create'] - 1
+                        regional_template = schematics_regions[region_from_zone(
+                            zone)]['create_template'].copy()
+                        regional_endpoint = schematics_regions[region_from_zone(
+                            zone)]['endpoint_url']
+                        temp_dir = os.path.join(image_dir, 'schematics')
+                        test_id = str(uuid.uuid4())
+                        test_dir = os.path.join(temp_dir, test_id)
+                        # LOG.info('creating test: %s' % test_dir)
+                        os.mkdir(test_dir)
+                        regional_template['template_data'][0]['variablestore'].append(
+                            {"name": "instance_name", "value": "t-%s" % test_id}
+                        )
+                        regional_template['template_data'][0]['variablestore'].append(
+                            {"name": "tmos_image_name", "value": image}
+                        )
+                        regional_template['template_data'][0]['variablestore'].append(
+                            {"name": "instance_profile", "value": size}
+                        )
+                        ssh_key_name = zone_resources[zone]['ssh_key_name']['value']
+                        if 'global_ssh_key' in CONFIG and CONFIG['global_ssh_key']:
+                            ssh_key_name = CONFIG['global_ssh_key']
+                        regional_template['template_data'][0]['variablestore'].append(
+                            {"name": "ssh_key_name", "value": ssh_key_name}
+                        )
+                        regional_template['template_data'][0]['variablestore'].append(
+                            {"name": "license_type", "value": "utilitypool"}
+                        )
+                        regional_template['template_data'][0]['variablestore'].append(
+                            {"name": "byol_license_basekey", "value": None}
+                        )
+                        regional_template['template_data'][0]['variablestore'].append(
+                            {"name": "license_host",
+                                "value": CONFIG['zone_license_hosts'][zone]['license_host']}
+                        )
+                        regional_template['template_data'][0]['variablestore'].append(
+                            {"name": "license_username",
+                                "value": CONFIG['zone_license_hosts'][zone]['license_username']}
+                        )
+                        regional_template['template_data'][0]['variablestore'].append(
+                            {"name": "license_password",
+                                "value": CONFIG['zone_license_hosts'][zone]['license_password']}
+                        )
+                        regional_template['template_data'][0]['variablestore'].append(
+                            {"name": "license_pool",
+                                "value": CONFIG['zone_license_hosts'][zone]['license_pool']}
+                        )
+                        regional_template['template_data'][0]['variablestore'].append(
+                            {"name": "license_sku_keyword_1",
+                                "value": CONFIG['zone_license_hosts'][zone]['license_sku_keyword_1']}
+                        )
+                        regional_template['template_data'][0]['variablestore'].append(
+                            {"name": "license_sku_keyword_2",
+                                "value": CONFIG['zone_license_hosts'][zone]['license_sku_keyword_2']}
+                        )
+                        regional_template['template_data'][0]['variablestore'].append(
+                            {"name": "license_unit_of_measure",
+                                "value": CONFIG['zone_license_hosts'][zone]['license_unit_of_measure']}
+                        )
+                        regional_template['template_data'][0]['variablestore'].append(
+                            {"name": "tmos_admin_password", "value": "f5C0nfig"}
+                        )
+                        regional_template['template_data'][0]['variablestore'].append(
+                            {"name": "management_subnet_id",
+                                "value": zone_resources[zone]['f5_management_id']['value']}
+                        )
+                        regional_template['template_data'][0]['variablestore'].append(
+                            {"name": "data_1_1_subnet_id",
+                                "value": zone_resources[zone]['f5_cluster_id']['value']}
+                        )
+                        regional_template['template_data'][0]['variablestore'].append(
+                            {"name": "data_1_2_subnet_id",
+                                "value": zone_resources[zone]['f5_internal_id']['value']}
+                        )
+                        regional_template['template_data'][0]['variablestore'].append(
+                            {"name": "data_1_3_subnet_id",
+                                "value": zone_resources[zone]['f5_external_id']['value']}
+                        )
+                        regional_template['template_data'][0]['variablestore'].append(
+                            {"name": "data_1_4_subnet_id", "value": None}
+                        )
+                        regional_template['template_data'][0]['variablestore'].append(
+                            {"name": "phone_home_url", "value": "%s/stop/%s" % (
+                                CONFIG['report_service_base_url'], test_id)
+                                }
+                        )
+                        regional_template['template_data'][0]['variablestore'].append(
+                            {"name": "template_version", "value": "09082020"}
+                        )
+                        regional_template['template_data'][0]['variablestore'].append(
+                            {"name": "app_id", "value": "%s/report/%s" % (
+                                CONFIG['report_service_base_url'], test_id)
+                                }
+                        )
+                        with open(os.path.join(test_dir, 'create_data.json'), 'w') as cdata:
+                            cdata.write(json.dumps(
+                                regional_template, indent=4, separators=(',', ': ')))
+                        with open(os.path.join(test_dir, 'service_endpoint.url'), 'w') as se:
+                            se.write(regional_endpoint)
+                        test_map[zone]['test_to_create'] = test_map[zone]['test_to_create'] - 1
 
 
 def build_tests():
