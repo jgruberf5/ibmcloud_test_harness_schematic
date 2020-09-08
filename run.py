@@ -161,7 +161,7 @@ def create_workspace(test_id, url, data):
         "Content-Type": "application/json",
         "Authorization": "Bearer %s" % token
     }
-    response = requests.post(url, headers=headers, json=data)
+    response = requests.post(url, headers=headers, data=json.dumps(data))
     LOG.info('workspace create returned %d for %s',
              response.status_code, test_id)
     if response.status_code < 300:
@@ -281,9 +281,9 @@ def run_test(test_path):
     url = None
     with open(os.path.join(test_dir, 'service_endpoint.url'), 'r') as eu:
         url = eu.read()
-    data = "{}"
-    with open(os.path.join(test_dir, 'create_data.json'), 'rb') as cdf:
-        data = cdf.read()
+    data = {}
+    with open(os.path.join(test_dir, 'create_data.json')) as cdf:
+        data = json.load(cdf)
     start_data = {
         'zone': zone,
         'image_name': image,
