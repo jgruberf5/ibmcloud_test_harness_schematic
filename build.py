@@ -84,9 +84,9 @@ def build_utility():
     zone_resources = {}
     with open(CONFIG['zone_resources_file'], 'r') as zrf:
         zone_resources = json.load(zrf)
-    schematics_zones = {}
-    with open(CONFIG['schematics_zones_file'], 'r') as srf:
-        schematics_zones = json.load(srf)
+    schematics_regions = {}
+    with open(CONFIG['schematics_regions_file'], 'r') as srf:
+        schematics_regions = json.load(srf)
     zones = os.listdir(QUEUE_DIR)
     test_map = {}
     for zone in zones:
@@ -101,6 +101,7 @@ def build_utility():
     test_per_zone = {}
     for zone in zones:
         if zone in CONFIG['active_zones']:
+            region = region_from_zone(zone)
             LOG.info('creating tests in zone: %s' % zone)
             test_per_zone[zone] = {}
             test_map[zone]['test_to_create'] = number_per_zone
@@ -140,7 +141,7 @@ def build_utility():
                                 test_dir = os.path.join(temp_dir, test_id)
                                 # LOG.info('creating test: %s' % test_dir)
                                 os.mkdir(test_dir)
-                                create_template = dict(schematics_zones[zone]['create_template'])
+                                create_template = dict(schematics_regions[region]['create_template'])
                                 create_template['name'] = "w-%s" % test_id
                                 create_template['template_data'][0]['variablestore'].append(
                                     {"name": "instance_name", "value": "t-%s" % test_id }
@@ -218,7 +219,7 @@ def build_utility():
                                 with open(os.path.join(test_dir, 'create_data.json'), 'w') as cdata:
                                     cdata.write(json.dumps(create_template, indent=4, separators=(',', ': ')))
                                 with open(os.path.join(test_dir, 'service_endpoint.url'), 'w') as se:
-                                    se.write(schematics_zones[zone]['endpoint_url'])
+                                    se.write(schematics_regions[region]['endpoint_url'])
                                 total_tests = total_tests + 1
     LOG.info("%d total tests created in %d zones for %d images", total_tests, total_zones, len(indexed_images.keys()))
 
@@ -226,9 +227,9 @@ def build_byol():
     zone_resources = {}
     with open(CONFIG['zone_resources_file'], 'r') as zrf:
         zone_resources = json.load(zrf)
-    schematics_zones = {}
-    with open(CONFIG['schematics_zones_file'], 'r') as srf:
-        schematics_zones = json.load(srf)
+    schematics_regions = {}
+    with open(CONFIG['schematics_regions_file'], 'r') as srf:
+        schematics_regions = json.load(srf)
     zones = os.listdir(QUEUE_DIR)
     num_licenses = licenses_available()
     test_map = {}
@@ -241,6 +242,7 @@ def build_byol():
     number_license_left = num_licenses % number_of_active_zones
     for zone in zones:
         if zone in CONFIG['active_zones']:
+            region = region_from_zone(zone)
             test_map[zone]['test_to_create'] = number_per_zone
             zone_dir = os.path.join(QUEUE_DIR, zone)
             images = os.listdir(zone_dir)
@@ -263,7 +265,7 @@ def build_byol():
                             test_dir = os.path.join(temp_dir, test_id)
                             # LOG.info('creating test: %s' % test_dir)
                             os.mkdir(test_dir)
-                            create_template = dict(schematics_zones[zone]['create_template'])
+                            create_template = dict(schematics_regions[region]['create_template'])
                             create_template['template_data'][0]['variablestore'].append(
                                 {"name": "instance_name", "value": "t-%s" % test_id }
                             )
@@ -340,7 +342,7 @@ def build_byol():
                             with open(os.path.join(test_dir, 'create_data.json'), 'w') as cdata:
                                 cdata.write(json.dumps(create_template, indent=4, separators=(',', ': ')))
                             with open(os.path.join(test_dir, 'service_endpoint.url'), 'w') as se:
-                                se.write(schematics_zones[zone]['endpoint_url'])
+                                se.write(schematics_regions[region]['endpoint_url'])
                             test_map[zone]['test_to_create'] = test_map[zone]['test_to_create'] - 1
 
 
