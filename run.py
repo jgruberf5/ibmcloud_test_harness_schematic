@@ -154,6 +154,8 @@ def pool_workspace_until(url, statuses, timeout):
 
 
 def create_workspace(test_id, url, data):
+    LOG.info('creating Schematic workspace for %s', test_id)
+    LOG.debug('create Schmatics workspace data: %s', data)
     token = get_iam_token()
     headers = {
         "Accept": "application/json",
@@ -287,7 +289,6 @@ def run_test(test_path):
     url = None
     with open(os.path.join(test_dir, 'service_endpoint.url'), 'r') as eu:
         url = eu.read()
-    LOG.info('creating workspace for test %s : %s', test_id, url)
     data = "{}"
     with open(os.path.join(test_dir, 'create_data.json'), 'r') as cdf:
         data = cdf.read()
