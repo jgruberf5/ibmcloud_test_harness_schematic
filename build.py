@@ -145,7 +145,6 @@ def build_utility():
                                 test_dir = os.path.join(temp_dir, test_id)
                                 # LOG.info('creating test: %s' % test_dir)
                                 os.mkdir(test_dir)
-                                regional_template = dict()
                                 regional_template['name'] = "w-%s" % test_id
                                 regional_template['template_data'][0]['variablestore'].append(
                                     {"name": "instance_name",
