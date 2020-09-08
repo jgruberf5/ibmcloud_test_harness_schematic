@@ -27,6 +27,7 @@ import datetime
 import time
 import tarfile
 import uuid
+import copy
 
 LOG = logging.getLogger('ibmcloud_test_harness_build')
 LOG.setLevel(logging.DEBUG)
@@ -166,7 +167,7 @@ def build_utility():
                                 "template_version": "09082020",
                                 "app_id": "%s/report/%s" % (CONFIG['report_service_base_url'], test_id)
                             }
-                            create_template = dict(schematics_regions[region_from_zone(zone)]['create_template'])
+                            create_template = copy.deepcopy(schematics_regions[region_from_zone(zone)]['create_template'])
                             create_template['name'] = "w-%s" % test_id
                             variablestore = list(create_template['template_data'][0]['variablestore'])
                             for k in variables.keys():
@@ -253,8 +254,7 @@ def build_byol():
                             "template_version": "09082020",
                             "app_id": "%s/report/%s" % (CONFIG['report_service_base_url'], test_id)
                         }
-                        create_template = dict(schematics_regions[region_from_zone(
-                            zone)]['create_template'])
+                        create_template = copy.deepcopy(schematics_regions[region_from_zone(zone)]['create_template'])
                         create_template['name'] = "w-%s" % test_id
                         variablestore = list(create_template['template_data'][0]['variablestore'])
                         for k in variables.keys():
