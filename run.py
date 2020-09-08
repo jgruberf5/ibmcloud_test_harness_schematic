@@ -285,11 +285,11 @@ def run_test(test_path):
     test_id = os.path.basename(test_dir)
     LOG.info('running test %s' % test_id)
     url = None
-    with open(os.path.join(test_path, 'service_endpoint.url'), 'r') as eu:
+    with open(os.path.join(test_dir, 'service_endpoint.url'), 'r') as eu:
         url = eu.read()
     LOG.info('creating workspace for test %s : %s', test_id, url)
     data = "{}"
-    with open(os.path.join(test_path, 'create_data.json'), 'r') as cdf:
+    with open(os.path.join(test_dir, 'create_data.json'), 'r') as cdf:
         data = cdf.read()
     start_data = {
         'zone': zone,
