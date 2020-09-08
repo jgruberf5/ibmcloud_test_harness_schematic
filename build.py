@@ -149,17 +149,20 @@ def build_utility():
                                 "instance_profile": size,
                                 "ssh_key_name": ssh_key_name,
                                 "license_type": "utilitypool",
+                                "byol_license_basekey": None,
                                 "license_host": CONFIG['zone_license_hosts'][zone]['license_host'],
                                 "license_username": CONFIG['zone_license_hosts'][zone]['license_username'],
                                 "license_password": CONFIG['zone_license_hosts'][zone]['license_password'],
                                 "license_pool": CONFIG['zone_license_hosts'][zone]['license_pool'],
                                 "license_sku_keyword_1": CONFIG['zone_license_hosts'][zone]['license_sku_keyword_1'],
+                                "license_sku_keyword_2": CONFIG['zone_license_hosts'][zone]['license_sku_keyword_2'],
                                 "license_unit_of_measure": CONFIG['zone_license_hosts'][zone]['license_unit_of_measure'],
                                 "tmos_admin_password": "f5c0nfig",
                                 "management_subnet_id": zone_resources[zone]['f5_management_id']['value'],
                                 "data_1_1_subnet_id": zone_resources[zone]['f5_cluster_id']['value'],
                                 "data_1_2_subnet_id": zone_resources[zone]['f5_internal_id']['value'],
                                 "data_1_3_subnet_id": zone_resources[zone]['f5_external_id']['value'],
+                                "data_1_4_subnet_id": None,
                                 "phone_home_url": "%s/stop/%s" % (CONFIG['report_service_base_url'], test_id),
                                 "template_version": "09082020",
                                 "app_id": "%s/report/%s" % (CONFIG['report_service_base_url'], test_id)
@@ -174,7 +177,7 @@ def build_utility():
                                 })
                             create_template['template_data'][0]['variablestore'] = variablestore
                             with open(os.path.join(test_dir, 'create_data.json'), 'w') as cdata:
-                                cdata.write(json.dumps(create_template))
+                                cdata.write(json.dumps(create_template, indent=4, separators=(',', ': ')))
                             regional_endpoint = schematics_regions[region_from_zone(
                                 zone)]['endpoint_url']
                             with open(os.path.join(test_dir, 'service_endpoint.url'), 'w') as se:
@@ -234,11 +237,19 @@ def build_byol():
                             "ssh_key_name": ssh_key_name,
                             "license_type": "byol",
                             "byol_license_basekey": license,
+                            "license_host": None,
+                            "license_username": None,
+                            "license_password": None,
+                            "license_pool": None,
+                            "license_sku_keyword_1": None,
+                            "license_sku_keyword_2": None,
+                            "license_unit_of_measure": None,
                             "tmos_admin_password": "f5c0nfig",
                             "management_subnet_id": zone_resources[zone]['f5_management_id']['value'],
                             "data_1_1_subnet_id": zone_resources[zone]['f5_cluster_id']['value'],
                             "data_1_2_subnet_id": zone_resources[zone]['f5_internal_id']['value'],
                             "data_1_3_subnet_id": zone_resources[zone]['f5_external_id']['value'],
+                            "data_1_4_subnet_id": None,
                             "phone_home_url": "%s/stop/%s" % (CONFIG['report_service_base_url'], test_id),
                             "template_version": "09082020",
                             "app_id": "%s/report/%s" % (CONFIG['report_service_base_url'], test_id)
