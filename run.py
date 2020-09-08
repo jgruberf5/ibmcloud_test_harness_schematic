@@ -180,8 +180,7 @@ def create_workspace(test_id, url, data):
         else:
             return (None, "create reqeust to %s timed-out" % url)
     else:
-        return (None, 'could not create workspace for %s - %d - %s',
-                test_id, response.status_code, response.text)
+        return (None, 'could not create workspace for %s - %d - %s' % (test_id, response.status_code, response.text))
 
 
 def do_plan(test_id, url, workspace_id):
@@ -210,8 +209,8 @@ def do_plan(test_id, url, workspace_id):
             status_message = "workspace %s plan timed-out" % plan_url
             return (None, status_message)
     else:
-        return (None, 'could not plan workspace for %s - %d - %s',
-                test_id, response.status_code, response.text)
+        return (None, 'could not plan workspace for %s - %d - %s' %
+                (test_id, response.status_code, response.text))
 
 
 def do_apply(test_id, url, workspace_id):
@@ -240,8 +239,8 @@ def do_apply(test_id, url, workspace_id):
             status_message = "workspace %s apply timed-out" % apply_url
             return (None, status_message)
     else:
-        return (None, 'could not apply workspace for %s - %d - %s',
-                test_id, response.status_code, response.text)
+        return (None, 'could not apply workspace for %s - %d - %s' %
+                (test_id, response.status_code, response.text))
 
 
 def delete_workspace(url, workspace_id):
@@ -340,7 +339,7 @@ def run_test(test_path):
             return
     else:
         start_report(test_id, start_data)
-        result = {
+        results = {
             "terraform_failed": "workspace create failed with status %s" % status
         }
         stop_report(test_id, results)

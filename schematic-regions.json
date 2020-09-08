@@ -4,7 +4,7 @@
         "create_template": {
             "type": ["terraform_v0.12"],
             "location": "us-south",
-            "workspace_description": "test harness workspace",
+            "description": "test harness workspace",
             "resource_group": "924c6495882d43179a0c79351e34b201",
             "template_repo": {"url": "https://github.com/f5devcentral/tmos-cloudinit/tree/master/demo/ibmcloud_vpc_gen2/schematics/tmos_multi_nic"},
             "template_data": [
@@ -25,7 +25,7 @@
         "create_template": {
             "type": ["terraform_v0.12"],
             "location": "us-east",
-            "workspace_description": "test harness workspace",
+            "description": "test harness workspace",
             "resource_group": "924c6495882d43179a0c79351e34b201",
             "template_repo": {"url": "https://github.com/f5devcentral/tmos-cloudinit/tree/master/demo/ibmcloud_vpc_gen2/schematics/tmos_multi_nic"},
             "template_data": [
@@ -46,7 +46,7 @@
         "create_template": {
             "type": ["terraform_v0.12"],
             "location": "eu-gb",
-            "workspace_description": "test harness workspace",
+            "description": "test harness workspace",
             "resource_group": "924c6495882d43179a0c79351e34b201",
             "template_repo": {"url": "https://github.com/f5devcentral/tmos-cloudinit/tree/master/demo/ibmcloud_vpc_gen2/schematics/tmos_multi_nic"},
             "template_data": [
@@ -67,7 +67,7 @@
         "create_template": {
             "type": ["terraform_v0.12"],
             "location": "eu-de",
-            "workspace_description": "test harness workspace",
+            "description": "test harness workspace",
             "resource_group": "924c6495882d43179a0c79351e34b201",
             "template_repo": {"url": "https://github.com/f5devcentral/tmos-cloudinit/tree/master/demo/ibmcloud_vpc_gen2/schematics/tmos_multi_nic"},
             "template_data": [
@@ -88,7 +88,7 @@
         "create_template": {
             "type": ["terraform_v0.12"],
             "location": "us-south",
-            "workspace_description": "test harness workspace",
+            "description": "test harness workspace",
             "resource_group": "924c6495882d43179a0c79351e34b201",
             "template_repo": {"url": "https://github.com/f5devcentral/tmos-cloudinit/tree/master/demo/ibmcloud_vpc_gen2/schematics/tmos_multi_nic"},
             "template_data": [
@@ -109,7 +109,7 @@
         "create_template": {
             "type": ["terraform_v0.12"],
             "location": "us-south",
-            "workspace_description": "test harness workspace",
+            "description": "test harness workspace",
             "resource_group": "924c6495882d43179a0c79351e34b201",
             "template_repo": {"url": "https://github.com/f5devcentral/tmos-cloudinit/tree/master/demo/ibmcloud_vpc_gen2/schematics/tmos_multi_nic"},
             "template_data": [
