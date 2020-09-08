@@ -7,6 +7,7 @@
             "description": "test harness workspace",
             "resource_group": "924c6495882d43179a0c79351e34b201",
             "template_repo": {"url": "https://github.com/f5devcentral/tmos-cloudinit/tree/master/demo/ibmcloud_vpc_gen2/schematics/tmos_multi_nic"},
+            "tags": [],
             "template_data": [
                 {
                     "folder": ".",
@@ -28,6 +29,7 @@
             "description": "test harness workspace",
             "resource_group": "924c6495882d43179a0c79351e34b201",
             "template_repo": {"url": "https://github.com/f5devcentral/tmos-cloudinit/tree/master/demo/ibmcloud_vpc_gen2/schematics/tmos_multi_nic"},
+            "tags": [],
             "template_data": [
                 {
                     "folder": ".",
@@ -49,6 +51,7 @@
             "description": "test harness workspace",
             "resource_group": "924c6495882d43179a0c79351e34b201",
             "template_repo": {"url": "https://github.com/f5devcentral/tmos-cloudinit/tree/master/demo/ibmcloud_vpc_gen2/schematics/tmos_multi_nic"},
+            "tags": [],
             "template_data": [
                 {
                     "folder": ".",
@@ -70,6 +73,7 @@
             "description": "test harness workspace",
             "resource_group": "924c6495882d43179a0c79351e34b201",
             "template_repo": {"url": "https://github.com/f5devcentral/tmos-cloudinit/tree/master/demo/ibmcloud_vpc_gen2/schematics/tmos_multi_nic"},
+            "tags": [],
             "template_data": [
                 {
                     "folder": ".",
@@ -91,6 +95,7 @@
             "description": "test harness workspace",
             "resource_group": "924c6495882d43179a0c79351e34b201",
             "template_repo": {"url": "https://github.com/f5devcentral/tmos-cloudinit/tree/master/demo/ibmcloud_vpc_gen2/schematics/tmos_multi_nic"},
+            "tags": [],
             "template_data": [
                 {
                     "folder": ".",
@@ -112,6 +117,7 @@
             "description": "test harness workspace",
             "resource_group": "924c6495882d43179a0c79351e34b201",
             "template_repo": {"url": "https://github.com/f5devcentral/tmos-cloudinit/tree/master/demo/ibmcloud_vpc_gen2/schematics/tmos_multi_nic"},
+            "tags": [],
             "template_data": [
                 {
                     "folder": ".",
