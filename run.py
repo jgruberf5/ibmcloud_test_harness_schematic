@@ -155,14 +155,13 @@ def pool_workspace_until(url, statuses, timeout):
 
 def create_workspace(test_id, url, data):
     LOG.info('creating Schematic workspace for %s', test_id)
-    LOG.debug('create Schmatics workspace data: %s', data)
     token = get_iam_token()
     headers = {
         "Accept": "application/json",
         "Content-Type": "application/json",
         "Authorization": "Bearer %s" % token
     }
-    response = requests.post(url, headers=headers, data=data)
+    response = requests.post(url, headers=headers, json=data)
     LOG.info('workspace create returned %d for %s',
              response.status_code, test_id)
     if response.status_code < 300:
@@ -177,13 +176,12 @@ def create_workspace(test_id, url, data):
             else:
                 LOG.error('workspace %s returned status %s - failed to create',
                           workspace_id, status_returned)
-                return (None, "could not create workspace with status %s" % status_returned)
+                return (None, "created workspace %s returned status %s" % (workspace_id, status_returned))
         else:
-            LOG.error('could not create workspace.. request to %s timed-out', url)
             return (None, "create reqeust to %s timed-out" % url)
     else:
         return (None, 'could not create workspace for %s - %d - %s',
-                  test_id, response.status_code, response.text)
+                test_id, response.status_code, response.text)
 
 
 def do_plan(test_id, url, workspace_id):
@@ -205,16 +203,15 @@ def do_plan(test_id, url, workspace_id):
             if status_returned.lower() == 'inactive':
                 return (activity_id, status_returned)
             else:
-                LOG.error('workspace %s returned status %s - failed to plan',
-                          workspace_id, status_returned)
-                return (None, "could not plan workspace with status %s" % status_returned)
+                status_message = "workspace %s plan with activity_id %s returned status %s" % (
+                    workspace_id, activity_id, status_returned)
+                return (None, status_message)
         else:
-            LOG.error(
-                'could not plan workspace.. request to %s timed-out', plan_url)
-            return (None, "plan reqeust to %s timed-out" % plan_url)
+            status_message = "workspace %s plan timed-out" % plan_url
+            return (None, status_message)
     else:
         return (None, 'could not plan workspace for %s - %d - %s',
-                  test_id, response.status_code, response.text)
+                test_id, response.status_code, response.text)
 
 
 def do_apply(test_id, url, workspace_id):
@@ -236,16 +233,15 @@ def do_apply(test_id, url, workspace_id):
             if status_returned.lower() == 'inactive':
                 return (activity_id, status_returned)
             else:
-                LOG.error('workspace %s returned status %s - failed to apply',
-                          workspace_id, status_returned)
-                return (None, "could not apply workspace with status %s" % status_returned)
+                status_message = "workspace %s apply with activity_id %s returned status %s" % (
+                    workspace_id, activity_id, status_returned)
+                return (None, status_message)
         else:
-            LOG.error(
-                'could not apply workspace.. request to %s timed-out', apply_url)
-            return (None, "apply reqeust to %s timed-out" % apply_url)
+            status_message = "workspace %s apply timed-out" % apply_url
+            return (None, status_message)
     else:
         return (None, 'could not apply workspace for %s - %d - %s',
-                  test_id, response.status_code, response.text)
+                test_id, response.status_code, response.text)
 
 
 def delete_workspace(url, workspace_id):
@@ -295,17 +291,17 @@ def run_test(test_path):
         'type': ttype
     }
     (workspace_id, status) = create_workspace(test_id, url, data)
-    if workspace_id:
+    if workspace_id is not None:
         start_report(test_id, start_data)
         update_report(
             test_id, {"workspace_id": workspace_id, "create_status": status})
         activity_id = do_plan(test_id, url, workspace_id)
-        if activity_id:
+        if activity_id is not None:
             log = get_log(url, workspace_id, activity_id)
             update_log = {"workspace_plan_log": log}
             update_report(test_id, update_log)
             activity_id = do_apply(test_id, url, workspace_id)
-            if activity_id:
+            if activity_id is not None:
                 log = get_log(url, workspace_id, activity_id)
                 now = datetime.datetime.utcnow()
                 update_data = {
@@ -356,7 +352,7 @@ def run_test(test_path):
         else:
             shutil.rmtree(test_dir)
         return
-    
+
     # workspace complete pool for return
     results = poll_report(test_id)
     if not results:
