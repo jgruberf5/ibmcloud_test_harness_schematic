@@ -177,7 +177,7 @@ def build_utility():
                                 })
                             create_template['template_data'][0]['variablestore'] = variablestore
                             with open(os.path.join(test_dir, 'create_data.json'), 'w') as cdata:
-                                cdata.write(json.dumps(create_template, indent=4, separators=(',', ': ')))
+                                cdata.write(json.dumps(create_template))
                             regional_endpoint = schematics_regions[region_from_zone(
                                 zone)]['endpoint_url']
                             with open(os.path.join(test_dir, 'service_endpoint.url'), 'w') as se:
