@@ -182,9 +182,8 @@ def create_workspace(test_id, url, data):
             LOG.error('could not create workspace.. request to %s timed-out', url)
             return (None, "create reqeust to %s timed-out" % url)
     else:
-        LOG.error('could not create workspace for %s - %d - %s',
+        return (None, 'could not create workspace for %s - %d - %s',
                   test_id, response.status_code, response.text)
-        return False
 
 
 def do_plan(test_id, url, workspace_id):
@@ -214,9 +213,8 @@ def do_plan(test_id, url, workspace_id):
                 'could not plan workspace.. request to %s timed-out', plan_url)
             return (None, "plan reqeust to %s timed-out" % plan_url)
     else:
-        LOG.error('could not plan workspace for %s - %d - %s',
+        return (None, 'could not plan workspace for %s - %d - %s',
                   test_id, response.status_code, response.text)
-        return False
 
 
 def do_apply(test_id, url, workspace_id):
@@ -246,9 +244,8 @@ def do_apply(test_id, url, workspace_id):
                 'could not apply workspace.. request to %s timed-out', apply_url)
             return (None, "apply reqeust to %s timed-out" % apply_url)
     else:
-        LOG.error('could not apply workspace for %s - %d - %s',
+        return (None, 'could not apply workspace for %s - %d - %s',
                   test_id, response.status_code, response.text)
-        return False
 
 
 def delete_workspace(url, workspace_id):
@@ -357,7 +354,6 @@ def run_test(test_path):
             os.makedirs(ERRORED_DIR, exist_ok=True)
             shutil.move(test_dir, os.path.join(ERRORED_DIR, test_id))
         else:
-            LOG.error('removing test directory %s', test_dir)
             shutil.rmtree(test_dir)
         return
     
