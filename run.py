@@ -339,6 +339,7 @@ def run_test(test_path):
             return
     else:
         LOG.error('failed to create workspace: %s', status)
+        LOG.error('POSTed data was %s', json.dumps(data))
         start_report(test_id, start_data)
         results = {
             "terraform_failed": "workspace create failed with status %s" % status
