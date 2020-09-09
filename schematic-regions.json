@@ -101,7 +101,7 @@
                     "folder": ".",
                     "type": "terraform_v0.12",
                     "variablestore": [
-                        {"name": "generation", "value": 2},
+                        {"name": "generation", "value": "2"},
                         {"name": "region", "value": "jp-tok"},
                         {"name": "template_source", "value": "f5devcentral/tmos-cloudinit/tree/master/demo/ibmcloud_vpc_gen2/schematics/tmos_multi_nic"}
                     ]

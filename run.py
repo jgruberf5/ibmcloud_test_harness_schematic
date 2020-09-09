@@ -46,6 +46,7 @@ ERRORED_DIR = "%s/errored_tests" % SCRIPT_DIR
 AUTH_ENDPOINT = 'https://iam.cloud.ibm.com/identity/token'
 
 SESSION_TOKEN = None
+REFRESH_TOKEN = None
 SESSION_TIMESTAMP = 0
 SESSION_SECONDS = 1800
 REQUEST_RETRIES = 10
@@ -112,7 +113,7 @@ def poll_report(test_id):
 
 
 def get_iam_token():
-    global SESSION_TOKEN, SESSION_TIMESTAMP
+    global SESSION_TOKEN, REFRESH_TOKEN, SESSION_TIMESTAMP
     now = int(time.time())
     if SESSION_TIMESTAMP > 0 and ((now - SESSION_TIMESTAMP) < SESSION_SECONDS):
         return SESSION_TOKEN
@@ -124,12 +125,23 @@ def get_iam_token():
     response = requests.post(AUTH_ENDPOINT, headers=headers, data=data)
     if response.status_code < 300:
         SESSION_TIMESTAMP = int(time.time())
-        SESSION_TOKEN = response.json()['access_token']
+        response_json = response.json()
+        SESSION_TOKEN = response_json['access_token']
+        REFRESH_TOKEN = response_json['refresh_token']
         return SESSION_TOKEN
     else:
         LOG.error('could not get an access token %d - %s',
                   response.status_code, response.content)
         return None
+
+
+def get_refresh_token():
+    now = int(time.time())
+    if SESSION_TIMESTAMP > 0 and ((now - SESSION_TIMESTAMP) < SESSION_SECONDS):
+        return REFRESH_TOKEN
+    else:
+        get_iam_token()
+        return REFRESH_TOKEN
 
 
 def pool_workspace_until(url, statuses, timeout):
@@ -156,10 +168,12 @@ def pool_workspace_until(url, statuses, timeout):
 def create_workspace(test_id, url, data):
     LOG.info('creating Schematic workspace for %s', test_id)
     token = get_iam_token()
+    refresh_token = get_refresh_token()
     headers = {
         "Accept": "application/json",
         "Content-Type": "application/json",
-        "Authorization": "Bearer %s" % token
+        "Authorization": "Bearer %s" % token,
+        "refresh_token": refresh_token
     }
     response = requests.post(url, headers=headers, data=json.dumps(data))
     LOG.info('workspace create returned %d for %s',
@@ -186,10 +200,12 @@ def create_workspace(test_id, url, data):
 def do_plan(test_id, url, workspace_id):
     plan_url = "%s/%s/plan" % (url, workspace_id)
     token = get_iam_token()
+    refresh_token = get_refresh_token()
     headers = {
         "Accept": "application/json",
         "Content-Type": "application/json",
-        "Authorization": "Bearer %s" % token
+        "Authorization": "Bearer %s" % token,
+        "refresh_token": refresh_token
     }
     response = requests.post(plan_url, headers=headers)
     if response.status_code < 300:
@@ -216,10 +232,12 @@ def do_plan(test_id, url, workspace_id):
 def do_apply(test_id, url, workspace_id):
     apply_url = "%s/%s/apply" % (url, workspace_id)
     token = get_iam_token()
+    refresh_token = get_refresh_token()
     headers = {
         "Accept": "application/json",
         "Content-Type": "application/json",
-        "Authorization": "Bearer %s" % token
+        "Authorization": "Bearer %s" % token,
+        "refresh_token": refresh_token
     }
     response = requests.put(apply_url, headers=headers)
     if response.status_code < 300:
@@ -246,10 +264,12 @@ def do_apply(test_id, url, workspace_id):
 def delete_workspace(url, workspace_id):
     delete_url = "%s/%s/?destroyResources=true" % (url, workspace_id)
     token = get_iam_token()
+    refresh_token = get_refresh_token()
     headers = {
         "Accept": "application/json",
         "Content-Type": "application/json",
-        "Authorization": "Bearer %s" % token
+        "Authorization": "Bearer %s" % token,
+        "refresh_token": refresh_token
     }
     response = requests.delete(delete_url, headers=headers)
     if response.status_code < 300:
@@ -262,10 +282,12 @@ def delete_workspace(url, workspace_id):
 def get_log(url, workspace_id, activity_id):
     log_url = "%s/%s/actions/%s/logs" % (url, workspace_id, activity_id)
     token = get_iam_token()
+    refresh_token = get_refresh_token()
     headers = {
         "Accept": "application/json",
         "Content-Type": "application/json",
-        "Authorization": "Bearer %s" % token
+        "Authorization": "Bearer %s" % token,
+        "refresh_token": refresh_token
     }
     response = requests.get(log_url, headers=headers)
     if response.status_code < 300:
