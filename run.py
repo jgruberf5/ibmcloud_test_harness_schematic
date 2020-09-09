@@ -388,12 +388,17 @@ def run_test(test_path):
                 log = get_log(url, workspace_id, apply_activity_id)
                 now = datetime.datetime.utcnow()
                 update_data = {
+                    'terraform_apply_result_code': 0,
                     'worspace_apply_log': log,
                     'terraform_apply_completed_at': now.timestamp(),
                     'terraform_apply_completed_at_readable': now.strftime('%Y-%m-%d %H:%M:%S UTC')
                 }
                 update_report(test_id, update_data)
             else:
+                update_data = {
+                    'terraform_apply_result_code': 1,
+                }
+                update_report(test_id, update_data)
                 results = {
                     "terraform_failed": "workspace apply failed with status %s" % apply_status
                 }
@@ -408,6 +413,10 @@ def run_test(test_path):
                     shutil.rmtree(test_dir)
                 return
         else:
+            update_data = {
+                'terraform_apply_result_code': 1,
+            }
+            update_report(test_id, update_data)
             results = {
                 "terraform_failed": "workspace plan failed with status %s" % plan_status
             }
@@ -425,6 +434,10 @@ def run_test(test_path):
         LOG.error('failed to create workspace: %s', create_status)
         LOG.error('POSTed data was %s', json.dumps(data))
         start_report(test_id, start_data)
+        update_data = {
+            'terraform_apply_result_code': 1,
+        }
+        update_report(test_id, update_data)
         results = {
             "terraform_failed": "workspace create failed with status %s" % create_status
         }
