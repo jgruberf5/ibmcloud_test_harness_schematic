@@ -218,6 +218,12 @@ def do_plan(test_id, url, workspace_id):
     response = requests.post(plan_url, headers=headers)
     LOG.info('workspace plan returned %d for %s',
              response.status_code, test_id)
+    while response.status_code == 409:
+        LOG.debug('workspace locked.. retrying')
+        time.sleep(2)
+        response = requests.post(plan_url, headers=headers)
+        LOG.info('workspace plan returned %d for %s',
+             response.status_code, test_id)
     if response.status_code < 300:
         activity_id = response.json()['activityid']
         status_url = "%s/%s" % (url, workspace_id)
@@ -253,6 +259,12 @@ def do_apply(test_id, url, workspace_id):
     response = requests.put(apply_url, headers=headers)
     LOG.info('workspace apply returned %d for %s',
              response.status_code, test_id)
+    while response.status_code == 409:
+        LOG.debug('workspace locked.. retrying')
+        time.sleep(2)
+        response = requests.post(apply_url, headers=headers)
+        LOG.info('workspace apply returned %d for %s',
+             response.status_code, test_id)
     if response.status_code < 300:
         activity_id = response.json()['activityid']
         status_url = "%s/%s" % (url, workspace_id)
@@ -277,7 +289,7 @@ def do_apply(test_id, url, workspace_id):
 
 
 def delete_workspace(url, workspace_id):
-    LOG.info('deleting Schematic workspace for %s', test_id)
+    LOG.info('deleting Schematic workspace for %s', workspace_id)
     delete_url = "%s/%s/?destroyResources=true" % (url, workspace_id)
     token = get_iam_token()
     refresh_token = get_refresh_token()
@@ -289,7 +301,13 @@ def delete_workspace(url, workspace_id):
     }
     response = requests.delete(delete_url, headers=headers)
     LOG.info('workspace delete returned %d for %s',
-             response.status_code, test_id)
+             response.status_code, workspace_id)
+    while response.status_code == 409:
+        LOG.debug('workspace locked.. retrying')
+        time.sleep(2)
+        response = requests.delete(delete_url, headers=headers)
+        LOG.info('workspace plan returned %d for %s',
+             response.status_code, workspace_id)
     if response.status_code < 300:
         return True
     else:
