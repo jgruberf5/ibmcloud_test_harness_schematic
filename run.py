@@ -220,10 +220,11 @@ def do_plan(test_id, url, workspace_id):
         "Authorization": "Bearer %s" % token,
         "refresh_token": refresh_token
     }
+    creds = 'apikey:%s' % CONFIG['api_key']
     headers = {
         "Accept": "application/json",
         "Content-Type": "application/json",
-        "Authorization": "Basic %s" % base64.b64encode('apikey:%s' % CONFIG['api_key'])
+        "Authorization": "Basic %s" % base64.b64encode(creds.encode('ascii'))
     }
     response = requests.post(plan_url, headers=headers)
     LOG.info('workspace plan returned %d for %s',
