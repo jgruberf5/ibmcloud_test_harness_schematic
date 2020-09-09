@@ -229,7 +229,7 @@ def do_plan(test_id, url, workspace_id):
         status_url = "%s/%s" % (url, workspace_id)
         LOG.info('polling for workspace plan to complete for %s', test_id)
         status_returned = poll_workspace_until(
-            status_url, ['inactive', 'failed', 'template error'], 60)
+            status_url, ['inactive', 'failed'], 60)
         if status_returned:
             if status_returned.lower() == 'inactive':
                 return (activity_id, status_returned)
@@ -272,9 +272,9 @@ def do_apply(test_id, url, workspace_id):
         status_url = "%s/%s" % (url, workspace_id)
         LOG.info('polling for workspace apply to complete for %s', test_id)
         status_returned = poll_workspace_until(
-            status_url, ['active', 'failed', 'template error'], 300)
+            status_url, ['active', 'failed'], 300)
         if status_returned:
-            if status_returned.lower() == 'inactive':
+            if status_returned.lower() == 'active':
                 return (activity_id, status_returned)
             else:
                 status_message = "workspace %s apply with activity_id %s returned status %s" % (
