@@ -310,7 +310,7 @@ def delete_workspace(url, workspace_id):
     status_returned = poll_workspace_until(
         status_url, ['inactive', 'active', 'failed'], 300)
     delete_url = "%s/%s" % (url, workspace_id)
-    if status_returned = 'active':
+    if status_returned.lower() == 'active':
         delete_url = "%s/%s/?destroyResources=true" % (url, workspace_id)
     token = get_iam_token()
     refresh_token = get_refresh_token()
