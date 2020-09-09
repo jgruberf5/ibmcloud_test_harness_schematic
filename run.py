@@ -120,6 +120,7 @@ def get_iam_token():
         return SESSION_TOKEN
     headers = {
         "Accept": "application/json",
+        "Authorization": get_basic_auth_header('bx', 'bx'),
         "Content-Type": "application/x-www-form-urlencoded"
     }
     data = "apikey=%s&grant_type=urn:ibm:params:oauth:grant-type:apikey" % CONFIG['api_key']
@@ -143,6 +144,11 @@ def get_refresh_token():
     else:
         get_iam_token()
         return REFRESH_TOKEN
+
+
+def get_basic_auth_header(username, password):
+    creds = "%s:%s" % (username, password)
+    return "Basic %s" % base64.b64encode(creds.encode('ascii'))
 
 
 def poll_workspace_until(url, statuses, timeout):
@@ -219,12 +225,6 @@ def do_plan(test_id, url, workspace_id):
         "Content-Type": "application/json",
         "Authorization": "Bearer %s" % token,
         "refresh_token": refresh_token
-    }
-    creds = 'apikey:%s' % CONFIG['api_key']
-    headers = {
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-        "Authorization": "Basic %s" % base64.b64encode(creds.encode('ascii'))
     }
     response = requests.post(plan_url, headers=headers)
     LOG.info('workspace plan returned %d for %s',
