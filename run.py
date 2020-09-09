@@ -228,7 +228,7 @@ def do_plan(test_id, url, workspace_id):
         activity_id = response.json()['activityid']
         status_url = "%s/%s" % (url, workspace_id)
         LOG.info('polling for workspace plan to initiate for %s', test_id)
-        status_returned = poll_workspace_util(
+        status_returned = poll_workspace_until(
             status_url, ['in progress', 'failed'], 300
         )
         if status_returned:
