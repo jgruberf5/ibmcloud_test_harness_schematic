@@ -227,19 +227,29 @@ def do_plan(test_id, url, workspace_id):
     if response.status_code < 300:
         activity_id = response.json()['activityid']
         status_url = "%s/%s" % (url, workspace_id)
-        LOG.info('polling for workspace plan to complete for %s', test_id)
-        status_returned = poll_workspace_until(
-            status_url, ['inactive', 'failed'], 60)
+        LOG.info('polling for workspace plan to initiate for %s', test_id)
+        status_returned = pool_workspace_util(
+            status_url, ['in progress', 'failed'], 300
+        )
         if status_returned:
-            if status_returned.lower() == 'inactive':
-                return (activity_id, status_returned)
-            else:
+            if status_returned.lower() == 'failed':
                 status_message = "workspace %s plan with activity_id %s returned status %s" % (
                     workspace_id, activity_id, status_returned)
                 return (None, status_message)
-        else:
-            status_message = "workspace %s plan timed-out" % plan_url
-            return (None, status_message)
+            else:
+                LOG.info('polling for workspace plan to complete for %s', test_id)
+                status_returned = poll_workspace_until(
+                    status_url, ['inactive', 'failed'], 300)
+                if status_returned:
+                    if status_returned.lower() == 'inactive':
+                        return (activity_id, status_returned)
+                    else:
+                        status_message = "workspace %s plan with activity_id %s returned status %s" % (
+                            workspace_id, activity_id, status_returned)
+                        return (None, status_message)
+                else:
+                    status_message = "workspace %s plan timed-out" % plan_url
+                    return (None, status_message)
     else:
         return (None, 'could not plan workspace for %s - %d - %s' %
                 (test_id, response.status_code, response.text))
