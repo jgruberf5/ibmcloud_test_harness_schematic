@@ -270,6 +270,8 @@ def do_apply(test_id, url, workspace_id):
             status_message = "workspace %s apply timed-out" % apply_url
             return (None, status_message)
     else:
+        LOG.error('could not apply workspace for %s - %d - %s',
+                  test_id, response.status_code, response.text)
         return (None, 'could not apply workspace for %s - %d - %s' %
                 (test_id, response.status_code, response.text))
 
@@ -327,18 +329,22 @@ def run_test(test_path):
         'image_name': image,
         'type': ttype
     }
-    (workspace_id, status) = create_workspace(test_id, url, data)
-    if workspace_id is not None:
+    (workspace_id, create_status) = create_workspace(test_id, url, data)
+    if workspace_id:
         start_report(test_id, start_data)
         update_report(
-            test_id, {"workspace_id": workspace_id, "create_status": status})
-        plan_activity_id = do_plan(test_id, url, workspace_id)
-        if plan_activity_id is not None:
+            test_id, {"workspace_id": workspace_id, "create_status": create_status})
+        (plan_activity_id, plan_status) = do_plan(test_id, url, workspace_id)
+        if plan_activity_id:
+            update_report(
+                test_id, {"workspace_id": workspace_id, "plan_status": create_status})
             log = get_log(url, workspace_id, plan_activity_id)
             update_log = {"workspace_plan_log": log}
             update_report(test_id, update_log)
-            apply_activity_id = do_apply(test_id, url, workspace_id)
-            if apply_activity_id is not None:
+            (apply_activity_id, apply_status) = do_apply(test_id, url, workspace_id)
+            if apply_activity_id:
+                update_report(
+                    test_id, {"workspace_id": workspace_id, "apply_status": apply_status})
                 log = get_log(url, workspace_id, apply_activity_id)
                 now = datetime.datetime.utcnow()
                 update_data = {
@@ -349,7 +355,7 @@ def run_test(test_path):
                 update_report(test_id, update_data)
             else:
                 results = {
-                    "terraform_failed": "workspace apply failed with status %s" % status
+                    "terraform_failed": "workspace apply failed with status %s" % apply_status
                 }
                 stop_report(test_id, results)
                 if 'preserve_errored_instances' in CONFIG and CONFIG['preserve_errored_instances']:
@@ -363,7 +369,7 @@ def run_test(test_path):
                 return
         else:
             results = {
-                "terraform_failed": "workspace plan failed with status %s" % status
+                "terraform_failed": "workspace plan failed with status %s" % plan_status
             }
             stop_report(test_id, results)
             if 'preserve_errored_instances' in CONFIG and CONFIG['preserve_errored_instances']:
@@ -376,11 +382,11 @@ def run_test(test_path):
                 shutil.rmtree(test_dir)
             return
     else:
-        LOG.error('failed to create workspace: %s', status)
+        LOG.error('failed to create workspace: %s', create_status)
         LOG.error('POSTed data was %s', json.dumps(data))
         start_report(test_id, start_data)
         results = {
-            "terraform_failed": "workspace create failed with status %s" % status
+            "terraform_failed": "workspace create failed with status %s" % create_status
         }
         stop_report(test_id, results)
         if 'preserve_errored_instances' in CONFIG and CONFIG['preserve_errored_instances']:
