@@ -145,14 +145,17 @@ def get_refresh_token():
 
 
 def pool_workspace_until(url, statuses, timeout):
+    LOG.debug('pooling workspace %s for %d seconds', url, timeout)
     end_time = time.time() + timeout
     while (end_time - time.time()) > 0:
         try:
             token = get_iam_token()
+            refresh_token = get_refresh_token()
             headers = {
                 "Accept": "application/json",
                 "Content-Type": "application/json",
-                "Authorization": "Bearer %s" % token
+                "Authorization": "Bearer %s" % token,
+                "refresh_token": refresh_token
             }
             response = requests.get(url, headers=headers)
             if response.status_code < 400:
@@ -161,7 +164,8 @@ def pool_workspace_until(url, statuses, timeout):
                     LOG.info('polling workspace return status %s for %s',
                              response_json['status'], test_id)
                     return response_json['status']
-        except Exception:
+        except Exception as pe:
+            LOG.error('exception polling workspace %s - %s', url, pe)
             return False
         time.sleep(1)
     return False
