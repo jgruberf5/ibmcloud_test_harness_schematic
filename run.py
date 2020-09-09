@@ -259,11 +259,9 @@ def do_apply(test_id, url, workspace_id):
     response = requests.put(apply_url, headers=headers)
     LOG.info('workspace apply returned %d for %s',
              response.status_code, test_id)
-    while response.status_code == 409 or response.status_code == 404:
+    while response.status_code == 409:
         if response.status_code == 409:
             LOG.debug('workspace locked.. retrying')
-        if response.status_code == 404:
-            LOG.debug('workspace vanished... retrying')
         time.sleep(2)
         response = requests.post(apply_url, headers=headers)
         LOG.info('workspace apply returned %d for %s',
