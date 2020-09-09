@@ -307,6 +307,7 @@ def do_apply(test_id, url, workspace_id):
 def delete_workspace(url, workspace_id):
     LOG.info('deleting Schematic workspace for %s', workspace_id)
     delete_url = "%s/%s/?destroyResources=true" % (url, workspace_id)
+    delete_url = "%s/%s" % (url, workspace_id)
     token = get_iam_token()
     refresh_token = get_refresh_token()
     headers = {
