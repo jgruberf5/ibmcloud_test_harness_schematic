@@ -185,7 +185,7 @@ def create_workspace(test_id, url, data):
         status_url = "%s/%s" % (url, workspace_id)
         LOG.info('polling for workspace create to complete for %s', test_id)
         status_returned = pool_workspace_until(
-            status_url, ['inactive', 'failed', 'template error'], 60)
+            status_url, ['inactive', 'failed', 'template error'], 300)
         if status_returned:
             if status_returned.lower() == 'inactive':
                 return (workspace_id, status_returned)
