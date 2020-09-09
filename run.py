@@ -145,7 +145,7 @@ def get_refresh_token():
 
 
 def poll_workspace_until(url, statuses, timeout):
-    w_id = os.path.bsaename(url)
+    w_id = os.path.basename(url)
     LOG.debug('polling workspace %s for %d seconds', w_id, timeout)
     end_time = time.time() + timeout
     while (end_time - time.time()) > 0:
