@@ -145,7 +145,7 @@ def get_refresh_token():
 
 
 def pool_workspace_until(url, statuses, timeout):
-    LOG.debug('pooling workspace %s for %d seconds', url, timeout)
+    LOG.debug('polling workspace %s for %d seconds', url, timeout)
     end_time = time.time() + timeout
     while (end_time - time.time()) > 0:
         try:
@@ -161,8 +161,8 @@ def pool_workspace_until(url, statuses, timeout):
             if response.status_code < 400:
                 response_json = response.json()
                 if response_json['status'].lower() in statuses:
-                    LOG.info('polling workspace return status %s for %s',
-                             response_json['status'], test_id)
+                    LOG.info('polling workspace %s return status %s',
+                             url, response_json['status'])
                     return response_json['status']
         except Exception as pe:
             LOG.error('exception polling workspace %s - %s', url, pe)
