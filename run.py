@@ -27,6 +27,7 @@ import concurrent.futures
 import threading
 import shutil
 import random
+import base64
 
 LOG = logging.getLogger('ibmcloud_test_harness_run')
 LOG.setLevel(logging.DEBUG)
@@ -218,6 +219,11 @@ def do_plan(test_id, url, workspace_id):
         "Content-Type": "application/json",
         "Authorization": "Bearer %s" % token,
         "refresh_token": refresh_token
+    }
+    headers = {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "Authorization": "Basic %s" % base64.b64encode('apikey:%s' % CONFIG['api_key'])
     }
     response = requests.post(plan_url, headers=headers)
     LOG.info('workspace plan returned %d for %s',
