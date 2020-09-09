@@ -223,7 +223,7 @@ def do_plan(test_id, url, workspace_id):
         time.sleep(2)
         response = requests.post(plan_url, headers=headers)
         LOG.info('workspace plan returned %d for %s',
-             response.status_code, test_id)
+                 response.status_code, test_id)
     if response.status_code < 300:
         activity_id = response.json()['activityid']
         status_url = "%s/%s" % (url, workspace_id)
@@ -259,12 +259,16 @@ def do_apply(test_id, url, workspace_id):
     response = requests.put(apply_url, headers=headers)
     LOG.info('workspace apply returned %d for %s',
              response.status_code, test_id)
-    while response.status_code == 409:
-        LOG.debug('workspace locked.. retrying')
+    while response.status_code == 409 or response.status_code == 404:
+        if response.status_code == 409:
+            LOG.debug('workspace locked.. retrying')
+        if response.status_code == 404:
+            LOG.debug('workspace vanished... retrying')
         time.sleep(2)
         response = requests.post(apply_url, headers=headers)
         LOG.info('workspace apply returned %d for %s',
-             response.status_code, test_id)
+                 response.status_code, test_id)
+
     if response.status_code < 300:
         activity_id = response.json()['activityid']
         status_url = "%s/%s" % (url, workspace_id)
@@ -307,7 +311,7 @@ def delete_workspace(url, workspace_id):
         time.sleep(2)
         response = requests.delete(delete_url, headers=headers)
         LOG.info('workspace plan returned %d for %s',
-             response.status_code, workspace_id)
+                 response.status_code, workspace_id)
     if response.status_code < 300:
         return True
     else:
@@ -359,7 +363,8 @@ def run_test(test_path):
             log = get_log(url, workspace_id, plan_activity_id)
             update_log = {"workspace_plan_log": log}
             update_report(test_id, update_log)
-            (apply_activity_id, apply_status) = do_apply(test_id, url, workspace_id)
+            (apply_activity_id, apply_status) = do_apply(
+                test_id, url, workspace_id)
             if apply_activity_id:
                 update_report(
                     test_id, {"workspace_id": workspace_id, "apply_status": apply_status})
