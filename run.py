@@ -144,8 +144,9 @@ def get_refresh_token():
         return REFRESH_TOKEN
 
 
-def pool_workspace_until(url, statuses, timeout):
-    LOG.debug('polling workspace %s for %d seconds', url, timeout)
+def poll_workspace_until(url, statuses, timeout):
+    w_id = os.path.bsaename(url)
+    LOG.debug('polling workspace %s for %d seconds', w_id, timeout)
     end_time = time.time() + timeout
     while (end_time - time.time()) > 0:
         try:
@@ -162,10 +163,10 @@ def pool_workspace_until(url, statuses, timeout):
                 response_json = response.json()
                 if response_json['status'].lower() in statuses:
                     LOG.info('polling workspace %s return status %s',
-                             url, response_json['status'])
+                             w_id, response_json['status'])
                     return response_json['status']
         except Exception as pe:
-            LOG.error('exception polling workspace %s - %s', url, pe)
+            LOG.error('exception polling workspace %s - %s', w_id, pe)
             return False
         time.sleep(1)
     return False
@@ -188,7 +189,7 @@ def create_workspace(test_id, url, data):
         workspace_id = response.json()['id']
         status_url = "%s/%s" % (url, workspace_id)
         LOG.info('polling for workspace create to complete for %s', test_id)
-        status_returned = pool_workspace_until(
+        status_returned = poll_workspace_until(
             status_url, ['inactive', 'failed', 'template error'], 300)
         if status_returned:
             if status_returned.lower() == 'inactive':
@@ -215,11 +216,13 @@ def do_plan(test_id, url, workspace_id):
         "refresh_token": refresh_token
     }
     response = requests.post(plan_url, headers=headers)
+    LOG.info('workspace plan returned %d for %s',
+             response.status_code, test_id)
     if response.status_code < 300:
         activity_id = response.json()['activityid']
         status_url = "%s/%s" % (url, workspace_id)
         LOG.info('polling for workspace plan to complete for %s', test_id)
-        status_returned = pool_workspace_until(
+        status_returned = poll_workspace_until(
             status_url, ['inactive', 'failed', 'template error'], 60)
         if status_returned:
             if status_returned.lower() == 'inactive':
@@ -248,11 +251,13 @@ def do_apply(test_id, url, workspace_id):
         "refresh_token": refresh_token
     }
     response = requests.put(apply_url, headers=headers)
+    LOG.info('workspace apply returned %d for %s',
+             response.status_code, test_id)
     if response.status_code < 300:
         activity_id = response.json()['activityid']
         status_url = "%s/%s" % (url, workspace_id)
         LOG.info('polling for workspace apply to complete for %s', test_id)
-        status_returned = pool_workspace_until(
+        status_returned = poll_workspace_until(
             status_url, ['active', 'failed', 'template error'], 300)
         if status_returned:
             if status_returned.lower() == 'inactive':
@@ -281,6 +286,8 @@ def delete_workspace(url, workspace_id):
         "refresh_token": refresh_token
     }
     response = requests.delete(delete_url, headers=headers)
+    LOG.info('workspace delete returned %d for %s',
+             response.status_code, test_id)
     if response.status_code < 300:
         return True
     else:
@@ -325,14 +332,14 @@ def run_test(test_path):
         start_report(test_id, start_data)
         update_report(
             test_id, {"workspace_id": workspace_id, "create_status": status})
-        activity_id = do_plan(test_id, url, workspace_id)
-        if activity_id is not None:
-            log = get_log(url, workspace_id, activity_id)
+        plan_activity_id = do_plan(test_id, url, workspace_id)
+        if plan_activity_id is not None:
+            log = get_log(url, workspace_id, plan_activity_id)
             update_log = {"workspace_plan_log": log}
             update_report(test_id, update_log)
-            activity_id = do_apply(test_id, url, workspace_id)
-            if activity_id is not None:
-                log = get_log(url, workspace_id, activity_id)
+            apply_activity_id = do_apply(test_id, url, workspace_id)
+            if apply_activity_id is not None:
+                log = get_log(url, workspace_id, apply_activity_id)
                 now = datetime.datetime.utcnow()
                 update_data = {
                     'worspace_apply_log': log,
