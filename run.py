@@ -158,6 +158,8 @@ def pool_workspace_until(url, statuses, timeout):
             if response.status_code < 400:
                 response_json = response.json()
                 if response_json['status'].lower() in statuses:
+                    LOG.info('polling workspace return status %s for %s',
+                             response_json['status'], test_id)
                     return response_json['status']
         except Exception:
             return False
@@ -198,6 +200,7 @@ def create_workspace(test_id, url, data):
 
 
 def do_plan(test_id, url, workspace_id):
+    LOG.info('planning Schematic workspace for %s', test_id)
     plan_url = "%s/%s/plan" % (url, workspace_id)
     token = get_iam_token()
     refresh_token = get_refresh_token()
@@ -230,6 +233,7 @@ def do_plan(test_id, url, workspace_id):
 
 
 def do_apply(test_id, url, workspace_id):
+    LOG.info('applying Schematic workspace for %s', test_id)
     apply_url = "%s/%s/apply" % (url, workspace_id)
     token = get_iam_token()
     refresh_token = get_refresh_token()
@@ -262,6 +266,7 @@ def do_apply(test_id, url, workspace_id):
 
 
 def delete_workspace(url, workspace_id):
+    LOG.info('deleting Schematic workspace for %s', test_id)
     delete_url = "%s/%s/?destroyResources=true" % (url, workspace_id)
     token = get_iam_token()
     refresh_token = get_refresh_token()
