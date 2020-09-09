@@ -158,7 +158,7 @@ def pool_workspace_until(url, statuses, timeout):
             if response.status_code < 400:
                 response_json = response.json()
                 if response_json['status'].lower() in statuses:
-                    return response_json
+                    return response_json['status']
         except Exception:
             return False
         time.sleep(1)
