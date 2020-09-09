@@ -165,6 +165,10 @@ def poll_workspace_until(url, statuses, timeout):
                     LOG.info('polling workspace %s return status %s',
                              w_id, response_json['status'])
                     return response_json['status']
+                else:
+                    LOG.debug('polling workspace %s interim status %s',
+                             w_id, response_json['status'])
+                    
         except Exception as pe:
             LOG.error('exception polling workspace %s - %s', w_id, pe)
             return False
