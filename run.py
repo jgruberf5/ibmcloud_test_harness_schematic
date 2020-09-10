@@ -349,7 +349,10 @@ def get_log(url, workspace_id, activity_id):
     }
     response = requests.get(log_url, headers=headers)
     if response.status_code < 300:
-        return response.json()
+        log_url = response.json()['log_url']
+        log_response = requests.get(log_url, headers=headers)
+        if response.status_code < 300:
+            return log_response.text
     else:
         return None
 
