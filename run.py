@@ -27,7 +27,6 @@ import concurrent.futures
 import threading
 import shutil
 import random
-import base64
 
 LOG = logging.getLogger('ibmcloud_test_harness_run')
 LOG.setLevel(logging.DEBUG)
@@ -120,7 +119,7 @@ def get_iam_token():
         return SESSION_TOKEN
     headers = {
         "Accept": "application/json",
-        "Authorization": get_basic_auth_header('bx', 'bx'),
+        "Authorization": "Basic Yng6Yng=",
         "Content-Type": "application/x-www-form-urlencoded"
     }
     data = "apikey=%s&grant_type=urn:ibm:params:oauth:grant-type:apikey" % CONFIG['api_key']
@@ -144,11 +143,6 @@ def get_refresh_token():
     else:
         get_iam_token()
         return REFRESH_TOKEN
-
-
-def get_basic_auth_header(username, password):
-    creds = "%s:%s" % (username, password)
-    return "Basic %s" % base64.b64encode(creds.encode('ascii'))
 
 
 def poll_workspace_until(url, statuses, timeout):
