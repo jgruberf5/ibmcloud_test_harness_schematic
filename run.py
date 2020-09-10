@@ -377,24 +377,24 @@ def run_test(test_path):
     if workspace_id:
         start_report(test_id, start_data)
         update_report(
-            test_id, {"workspace_id": workspace_id, "create_status": create_status})
+            test_id, {"workspace_id": workspace_id, "schematic_workspace_create_status": create_status})
         (plan_activity_id, plan_status) = do_plan(test_id, url, workspace_id)
         if plan_activity_id:
             update_report(
-                test_id, {"workspace_id": workspace_id, "plan_status": create_status})
+                test_id, {"workspace_id": workspace_id, "terraform_plan_status": create_status})
             log = get_log(url, workspace_id, plan_activity_id)
-            update_log = {"workspace_plan_log": log}
+            update_log = {"terraform_plan_log": log}
             update_report(test_id, update_log)
             (apply_activity_id, apply_status) = do_apply(
                 test_id, url, workspace_id)
             if apply_activity_id:
                 update_report(
-                    test_id, {"workspace_id": workspace_id, "apply_status": apply_status})
+                    test_id, {"workspace_id": workspace_id, "terraform_apply_status": apply_status})
                 log = get_log(url, workspace_id, apply_activity_id)
                 now = datetime.datetime.utcnow()
                 update_data = {
                     'terraform_apply_result_code': 0,
-                    'worspace_apply_log': log,
+                    'terraform_apply_log': log,
                     'terraform_apply_completed_at': now.timestamp(),
                     'terraform_apply_completed_at_readable': now.strftime('%Y-%m-%d %H:%M:%S UTC')
                 }
@@ -405,7 +405,7 @@ def run_test(test_path):
                 }
                 update_report(test_id, update_data)
                 results = {
-                    "terraform_failed": "workspace apply failed with status %s" % apply_status
+                    "terraform_failed": "apply failed with status %s" % apply_status
                 }
                 stop_report(test_id, results)
                 if 'preserve_errored_instances' in CONFIG and CONFIG['preserve_errored_instances']:
@@ -423,7 +423,7 @@ def run_test(test_path):
             }
             update_report(test_id, update_data)
             results = {
-                "terraform_failed": "workspace plan failed with status %s" % plan_status
+                "terraform_failed": "plan failed with status %s" % plan_status
             }
             stop_report(test_id, results)
             if 'preserve_errored_instances' in CONFIG and CONFIG['preserve_errored_instances']:
@@ -436,7 +436,7 @@ def run_test(test_path):
                 shutil.rmtree(test_dir)
             return
     else:
-        LOG.error('failed to create workspace: %s', create_status)
+        LOG.error('failed to create schematic workspace: %s', create_status)
         LOG.error('POSTed data was %s', json.dumps(data))
         start_report(test_id, start_data)
         update_data = {
@@ -444,7 +444,7 @@ def run_test(test_path):
         }
         update_report(test_id, update_data)
         results = {
-            "terraform_failed": "workspace create failed with status %s" % create_status
+            "terraform_failed": "schematics workspace create failed with status %s" % create_status
         }
         stop_report(test_id, results)
         if 'preserve_errored_instances' in CONFIG and CONFIG['preserve_errored_instances']:
