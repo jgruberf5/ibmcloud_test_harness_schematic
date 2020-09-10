@@ -52,6 +52,11 @@ SESSION_SECONDS = 1800
 REQUEST_RETRIES = 10
 REQUEST_DELAY = 10
 
+WORKSPACE_CREATE_TIMEOUT = 300
+WORKSPACE_PLAN_TIMEOUT = 300
+WORKSPACE_APPLY_TIMEOUT = 300
+WORKSPACE_DELETE_TIMEOUT = 300
+
 CONFIG_FILE = "%s/runners-config.json" % SCRIPT_DIR
 CONFIG = {}
 
@@ -195,7 +200,7 @@ def create_workspace(test_id, url, data):
         status_url = "%s/%s" % (url, workspace_id)
         LOG.info('polling for workspace create to complete for %s', test_id)
         status_returned = poll_workspace_until(
-            status_url, ['inactive', 'failed', 'template error'], 300)
+            status_url, ['inactive', 'failed', 'template error'], WORKSPACE_CREATE_TIMEOUT)
         if status_returned:
             if status_returned.lower() == 'inactive':
                 return (workspace_id, status_returned)
@@ -234,7 +239,7 @@ def do_plan(test_id, url, workspace_id):
         status_url = "%s/%s" % (url, workspace_id)
         LOG.info('polling for workspace plan to initiate for %s', test_id)
         status_returned = poll_workspace_until(
-            status_url, ['inprogress', 'failed'], 300
+            status_url, ['inprogress', 'failed'], WORKSPACE_PLAN_TIMEOUT
         )
         if status_returned:
             if status_returned.lower() == 'failed':
@@ -244,7 +249,7 @@ def do_plan(test_id, url, workspace_id):
             else:
                 LOG.info('polling for workspace plan to complete for %s', test_id)
                 status_returned = poll_workspace_until(
-                    status_url, ['inactive', 'failed'], 300)
+                    status_url, ['inactive', 'failed'], WORKSPACE_PLAN_TIMEOUT)
                 if status_returned:
                     if status_returned.lower() == 'inactive':
                         return (activity_id, status_returned)
@@ -287,7 +292,7 @@ def do_apply(test_id, url, workspace_id):
         status_url = "%s/%s" % (url, workspace_id)
         LOG.info('polling for workspace apply to complete for %s', test_id)
         status_returned = poll_workspace_until(
-            status_url, ['active', 'failed'], 300)
+            status_url, ['active', 'failed'], WORKSPACE_APPLY_TIMEOUT)
         if status_returned:
             if status_returned.lower() == 'active':
                 return (activity_id, status_returned)
@@ -309,7 +314,7 @@ def delete_workspace(url, workspace_id):
     LOG.info('deleting Schematic workspace for %s', workspace_id)
     status_url = "%s/%s" % (url, workspace_id)
     status_returned = poll_workspace_until(
-        status_url, ['inactive', 'active', 'failed'], 300)
+        status_url, ['inactive', 'active', 'failed'], WORKSPACE_DELETE_TIMEOUT)
     delete_url = "%s/%s" % (url, workspace_id)
     if status_returned.lower() == 'active':
         delete_url = "%s/%s/?destroyResources=true" % (url, workspace_id)
@@ -548,7 +553,7 @@ def runner():
 
 
 def initialize():
-    global MY_PID, CONFIG
+    global MY_PID, CONFIG, WORKSPACE_CREATE_TIMEOUT, WORKSPACE_PLAN_TIMEOUT, WORKSPACE_APPLY_TIMEOUT, WORKSPACE_DELETE_TIMEOUT
     MY_PID = os.getpid()
     os.makedirs(QUEUE_DIR, exist_ok=True)
     os.makedirs(RUNNING_DIR, exist_ok=True)
@@ -559,6 +564,14 @@ def initialize():
     config = json.loads(config_json)
     # intialize missing config defaults
     CONFIG = config
+    if 'workspace_create_timeout' in config:
+        WORKSPACE_CREATE_TIMEOUT = config['workspace_create_timeout']
+    if 'workspace_plan_timeout' in config:
+        WORKSPACE_PLAN_TIMEOUT = config['workspace_plan_timeout']
+    if 'workspace_apply_timeout' in config:
+        WORKSPACE_APPLY_TIMEOUT = config['workspace_apply_timeout']
+    if 'workspace_delete_timeout' in config:
+        WORKSPACE_DELETE_TIMEOUT = config['workspace_delete_timeout']
 
 
 if __name__ == "__main__":
