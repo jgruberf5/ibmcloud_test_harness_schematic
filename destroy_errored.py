@@ -270,7 +270,7 @@ def initialize():
     if 'workspace_status_poll_interval' in config:
         WORKSPACE_STATUS_POLL_INTERVAL = config['workspace_status_poll_interval']
     if 'workspace_retry_interval' in config:
-        WORKSPACE_RETRY_INTERVAL = config['worksapce_retry_interval']
+        WORKSPACE_RETRY_INTERVAL = config['workspace_retry_interval']
 
 
 if __name__ == "__main__":
