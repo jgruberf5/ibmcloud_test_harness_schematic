@@ -256,7 +256,7 @@ def initialize():
     os.makedirs(QUEUE_DIR, exist_ok=True)
     os.makedirs(ERRORED_DIR, exist_ok=True)
     os.makedirs(COMPLETE_DIR, exist_ok=True)
-    filter_ids = os.getenv(ERRORED_TEST_IDS, [])
+    filter_ids = os.getenv('ERRORED_TEST_IDS', "")
     if filter_ids:
         ERRORED_TEST_IDS = filter_ids.split(',')
     config_json = ''
