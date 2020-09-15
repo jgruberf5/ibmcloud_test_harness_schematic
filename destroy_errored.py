@@ -232,7 +232,7 @@ def delete_workspace(test_dir):
 def build_pool():
     pool = []
     for rt in os.listdir(ERRORED_DIR):
-        if len(ERRORED_TEST_IDS) > 0:
+        if ERRORED_TEST_IDS:
             for id in ERRORED_TEST_IDS:
                 if id.strip() == rt:
                     pool.append(os.path.join(ERRORED_DIR, rt))
@@ -243,6 +243,7 @@ def build_pool():
 
 def runner():
     test_pool = build_pool()
+    LOG.debug('deleting %s', test_pool)
     random.shuffle(test_pool)
     with concurrent.futures.ThreadPoolExecutor(max_workers=CONFIG['thread_pool_size']) as executor:
         for test_path in test_pool:
