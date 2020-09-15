@@ -195,6 +195,7 @@ def delete_workspace(test_dir):
     workspace_id = get_workspace_id(url, test_id)
     if not workspace_id:
         shutil.rmtree(test_dir)
+        return
     LOG.info('deleting Schematic workspace for %s', workspace_id)
     status_url = "%s/%s" % (url, workspace_id)
     status_returned = poll_workspace_until(
