@@ -246,7 +246,7 @@ def runner():
     random.shuffle(test_pool)
     with concurrent.futures.ThreadPoolExecutor(max_workers=CONFIG['thread_pool_size']) as executor:
         for test_path in test_pool:
-            executor.submit(test_path)
+            executor.submit(delete_workspace, test_path)
 
 
 def initialize():
