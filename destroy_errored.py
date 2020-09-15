@@ -232,7 +232,7 @@ def delete_workspace(test_dir):
 def build_pool():
     pool = []
     for rt in os.listdir(ERRORED_DIR):
-        if ERRORED_TEST_IDS:
+        if len(ERRORED_TEST_IDS) > 0:
             for id in ERRORED_TEST_IDS:
                 if id.strip() == rt:
                     pool.append(os.path.join(ERRORED_DIR, rt))
