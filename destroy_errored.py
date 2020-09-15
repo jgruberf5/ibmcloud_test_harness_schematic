@@ -250,7 +250,8 @@ def runner():
 
 
 def initialize():
-    global MY_PID, CONFIG, ERRORED_TEST_IDS
+    global MY_PID, CONFIG, ERRORED_TEST_IDS, WORKSPACE_DELETE_TIMEOUT, \
+           WORKSPACE_RETRY_INTERVAL, WORKSPACE_STATUS_POLL_INTERVAL
     MY_PID = os.getpid()
     os.makedirs(QUEUE_DIR, exist_ok=True)
     os.makedirs(ERRORED_DIR, exist_ok=True)
@@ -264,6 +265,12 @@ def initialize():
     config = json.loads(config_json)
     # intialize missing config defaults
     CONFIG = config
+    if 'workspace_delete_timeout' in config:
+        WORKSPACE_DELETE_TIMEOUT = config['workspace_delete_timeout']
+    if 'workspace_status_poll_interval' in config:
+        WORKSPACE_STATUS_POLL_INTERVAL = config['workspace_status_poll_interval']
+    if 'workspace_retry_interval' in config:
+        WORKSPACE_RETRY_INTERVAL = config['worksapce_retry_interval']
 
 
 if __name__ == "__main__":
