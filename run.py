@@ -59,6 +59,8 @@ WORKSPACE_DELETE_TIMEOUT = 300
 WORKSPACE_RETRY_INTERVAL = 10
 WORKSPACE_STATUS_POLL_INTERVAL = 10
 
+REPORT_REQUEST_INTERVAL = 30
+
 CONFIG_FILE = "%s/runners-config.json" % SCRIPT_DIR
 CONFIG = {}
 
@@ -115,7 +117,7 @@ def poll_report(test_id):
         seconds_left = int(end_time - time.time())
         LOG.debug('test_id: %s with %s seconds left',
                   test_id, str(seconds_left))
-        time.sleep(CONFIG['report_request_frequency'])
+        time.sleep(REPORT_REQUEST_INTERVAL)
     return None
 
 
@@ -243,7 +245,7 @@ def do_plan(test_id, url, workspace_id):
              response.status_code, test_id)
     while response.status_code == 409:
         LOG.debug('workspace locked.. retrying')
-        time.sleep(2)
+        time.sleep(WORKSPACE_RETRY_INTERVAL)
         response = requests.post(plan_url, headers=headers)
         LOG.info('workspace plan returned %d for %s',
                  response.status_code, test_id)
@@ -301,7 +303,7 @@ def do_apply(test_id, url, workspace_id):
     while response.status_code == 409:
         if response.status_code == 409:
             LOG.debug('workspace locked.. retrying')
-        time.sleep(2)
+        time.sleep(WORKSPACE_RETRY_INTERVAL)
         response = requests.post(apply_url, headers=headers)
         LOG.info('workspace apply returned %d for %s',
                  response.status_code, test_id)
@@ -355,7 +357,7 @@ def delete_workspace(url, workspace_id):
              response.status_code, workspace_id)
     while response.status_code == 409:
         LOG.debug('workspace locked.. retrying')
-        time.sleep(2)
+        time.sleep(WORKSPACE_RETRY_INTERVAL)
         response = requests.delete(delete_url, headers=headers)
         LOG.info('workspace delete returned %d for %s',
                  response.status_code, workspace_id)
@@ -387,7 +389,7 @@ def get_log(url, workspace_id, activity_id):
              response.status_code, activity_id)
     while response.status_code == 409:
         LOG.debug('workspace locked.. retrying')
-        time.sleep(2)
+        time.sleep(WORKSPACE_RETRY_INTERVAL)
         response = requests.delete(log_url, headers=headers)
         LOG.info('activity get log returned %d for %s',
                  response.status_code, activity_id)
@@ -600,7 +602,7 @@ def initialize():
     global MY_PID, CONFIG, WORKSPACE_CREATE_TIMEOUT, \
         WORKSPACE_PLAN_TIMEOUT, WORKSPACE_APPLY_TIMEOUT, \
         WORKSPACE_DELETE_TIMEOUT, WORKSPACE_STATUS_POLL_INTERVAL, \
-        WORKSPACE_RETRY_INTERVAL
+        WORKSPACE_RETRY_INTERVAL, REPORT_REQUEST_INTERVAL
     MY_PID = os.getpid()
     os.makedirs(QUEUE_DIR, exist_ok=True)
     os.makedirs(RUNNING_DIR, exist_ok=True)
@@ -623,6 +625,8 @@ def initialize():
         WORKSPACE_STATUS_POLL_INTERVAL = config['workspace_status_poll_interval']
     if 'workspace_retry_interval' in config:
         WORKSPACE_RETRY_INTERVAL = config['worksapce_retry_interval']
+    if 'report_request_interval' in config:
+        REPORT_REQUEST_INTERVAL = config['report_request_interval']
 
 
 if __name__ == "__main__":
