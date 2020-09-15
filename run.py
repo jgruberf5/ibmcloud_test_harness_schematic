@@ -56,6 +56,8 @@ WORKSPACE_CREATE_TIMEOUT = 300
 WORKSPACE_PLAN_TIMEOUT = 300
 WORKSPACE_APPLY_TIMEOUT = 300
 WORKSPACE_DELETE_TIMEOUT = 300
+WORKSPACE_RETRY_INTERVAL = 10
+WORKSPACE_STATUS_POLL_INTERVAL = 10
 
 CONFIG_FILE = "%s/runners-config.json" % SCRIPT_DIR
 CONFIG = {}
@@ -165,6 +167,12 @@ def poll_workspace_until(url, statuses, timeout):
                 "refresh_token": refresh_token
             }
             response = requests.get(url, headers=headers)
+            while response.status_code == 429:
+                LOG.debug('exceeded throttling limit.. retrying')
+                time.sleep(WORKSPACE_RETRY_INTERVAL)
+                response = requests.post(url, headers=headers)
+                LOG.info('polling workspace returned %d for %s',
+                         response.status_code, url)
             if response.status_code < 400:
                 response_json = response.json()
                 if response_json['status'].lower() in statuses:
@@ -173,12 +181,12 @@ def poll_workspace_until(url, statuses, timeout):
                     return response_json['status']
                 else:
                     LOG.debug('polling workspace %s interim status %s',
-                             w_id, response_json['status'])
-                    
+                              w_id, response_json['status'])
+
         except Exception as pe:
             LOG.error('exception polling workspace %s - %s', w_id, pe)
             return False
-        time.sleep(1)
+        time.sleep(WORKSPACE_STATUS_POLL_INTERVAL)
     return False
 
 
@@ -195,6 +203,12 @@ def create_workspace(test_id, url, data):
     response = requests.post(url, headers=headers, data=json.dumps(data))
     LOG.info('workspace create returned %d for %s',
              response.status_code, test_id)
+    while response.status_code == 429:
+        LOG.debug('exceeded throttling limit.. retrying')
+        time.sleep(WORKSPACE_RETRY_INTERVAL)
+        response = requests.post(url, headers=headers)
+        LOG.info('workspace create returned %d for %s',
+                 response.status_code, test_id)
     if response.status_code < 300:
         workspace_id = response.json()['id']
         status_url = "%s/%s" % (url, workspace_id)
@@ -210,7 +224,6 @@ def create_workspace(test_id, url, data):
                 return (None, "created workspace %s returned status %s" % (workspace_id, status_returned))
         else:
             return (None, "create reqeust to %s timed-out" % url)
-    else:
         return (None, 'could not create workspace for %s - %d - %s' % (test_id, response.status_code, response.text))
 
 
@@ -231,6 +244,12 @@ def do_plan(test_id, url, workspace_id):
     while response.status_code == 409:
         LOG.debug('workspace locked.. retrying')
         time.sleep(2)
+        response = requests.post(plan_url, headers=headers)
+        LOG.info('workspace plan returned %d for %s',
+                 response.status_code, test_id)
+    while response.status_code == 429:
+        LOG.debug('exceeded throttling limit.. retrying')
+        time.sleep(WORKSPACE_RETRY_INTERVAL)
         response = requests.post(plan_url, headers=headers)
         LOG.info('workspace plan returned %d for %s',
                  response.status_code, test_id)
@@ -286,7 +305,12 @@ def do_apply(test_id, url, workspace_id):
         response = requests.post(apply_url, headers=headers)
         LOG.info('workspace apply returned %d for %s',
                  response.status_code, test_id)
-
+    while response.status_code == 429:
+        LOG.debug('exceeded throttling limit.. retrying')
+        time.sleep(WORKSPACE_RETRY_INTERVAL)
+        response = requests.post(apply_url, headers=headers)
+        LOG.info('workspace apply returned %d for %s',
+                 response.status_code, test_id)
     if response.status_code < 300:
         activity_id = response.json()['activityid']
         status_url = "%s/%s" % (url, workspace_id)
@@ -333,8 +357,14 @@ def delete_workspace(url, workspace_id):
         LOG.debug('workspace locked.. retrying')
         time.sleep(2)
         response = requests.delete(delete_url, headers=headers)
-        LOG.info('workspace plan returned %d for %s',
+        LOG.info('workspace delete returned %d for %s',
                  response.status_code, workspace_id)
+    while response.status_code == 429:
+        LOG.debug('exceeded throttling limit.. retrying')
+        time.sleep(WORKSPACE_RETRY_INTERVAL)
+        response = requests.post(delete_url, headers=headers)
+        LOG.info('workspace delete returned %d for %s',
+                 response.status_code, delete_url)
     if response.status_code < 300:
         return True
     else:
@@ -353,6 +383,20 @@ def get_log(url, workspace_id, activity_id):
         "refresh_token": refresh_token
     }
     response = requests.get(log_url, headers=headers)
+    LOG.info('activity get log returned %d for %s',
+             response.status_code, activity_id)
+    while response.status_code == 409:
+        LOG.debug('workspace locked.. retrying')
+        time.sleep(2)
+        response = requests.delete(log_url, headers=headers)
+        LOG.info('activity get log returned %d for %s',
+                 response.status_code, activity_id)
+    while response.status_code == 429:
+        LOG.debug('exceeded throttling limit.. retrying')
+        time.sleep(WORKSPACE_RETRY_INTERVAL)
+        response = requests.post(log_url, headers=headers)
+        LOG.info('activity get log returned %d for %s',
+                 response.status_code, activity_id)
     if response.status_code < 300:
         log_json = response.json()
         log_url = log_json['templates'][0]['log_url']
@@ -553,7 +597,10 @@ def runner():
 
 
 def initialize():
-    global MY_PID, CONFIG, WORKSPACE_CREATE_TIMEOUT, WORKSPACE_PLAN_TIMEOUT, WORKSPACE_APPLY_TIMEOUT, WORKSPACE_DELETE_TIMEOUT
+    global MY_PID, CONFIG, WORKSPACE_CREATE_TIMEOUT, \
+        WORKSPACE_PLAN_TIMEOUT, WORKSPACE_APPLY_TIMEOUT, \
+        WORKSPACE_DELETE_TIMEOUT, WORKSPACE_STATUS_POLL_INTERVAL, \
+        WORKSPACE_RETRY_INTERVAL
     MY_PID = os.getpid()
     os.makedirs(QUEUE_DIR, exist_ok=True)
     os.makedirs(RUNNING_DIR, exist_ok=True)
@@ -572,6 +619,10 @@ def initialize():
         WORKSPACE_APPLY_TIMEOUT = config['workspace_apply_timeout']
     if 'workspace_delete_timeout' in config:
         WORKSPACE_DELETE_TIMEOUT = config['workspace_delete_timeout']
+    if 'workspace_status_poll_interval' in config:
+        WORKSPACE_STATUS_POLL_INTERVAL = config['workspace_status_poll_interval']
+    if 'workspace_retry_interval' in config:
+        WORKSPACE_RETRY_INTERVAL = config['worksapce_retry_interval']
 
 
 if __name__ == "__main__":
