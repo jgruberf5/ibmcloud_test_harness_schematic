@@ -259,6 +259,7 @@ def initialize():
     filter_ids = os.getenv('ERRORED_TEST_IDS', "")
     if filter_ids:
         ERRORED_TEST_IDS = filter_ids.split(',')
+    LOG.debug('test filter is: %s', ERRORED_TEST_IDS)
     config_json = ''
     with open(CONFIG_FILE, 'r') as cf:
         config_json = cf.read()
