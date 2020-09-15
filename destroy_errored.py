@@ -196,13 +196,15 @@ def delete_workspace(test_dir):
     if not workspace_id:
         shutil.rmtree(test_dir)
         return
-    LOG.info('deleting Schematic workspace for %s', workspace_id)
     status_url = "%s/%s" % (url, workspace_id)
     status_returned = poll_workspace_until(
         status_url, ['inactive', 'active', 'failed'], WORKSPACE_DELETE_TIMEOUT)
     delete_url = "%s/%s" % (url, workspace_id)
     if status_returned.lower() in ['active', 'draft']:
+        LOG.info('deleting Schematic workspace and resources for %s', workspace_id)
         delete_url = "%s/%s/?destroyResources=true" % (url, workspace_id)
+    else:
+        LOG.info('deleting Schematic workspace for %s', workspace_id)
     token = get_iam_token()
     refresh_token = get_refresh_token()
     headers = {
