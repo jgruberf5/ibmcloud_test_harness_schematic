@@ -198,9 +198,9 @@ def delete_workspace(test_dir):
         return
     status_url = "%s/%s" % (url, workspace_id)
     status_returned = poll_workspace_until(
-        status_url, ['inactive', 'active', 'failed', 'draft'], WORKSPACE_DELETE_TIMEOUT)
+        status_url, ['inactive', 'active', 'failed', 'draft', 'templateerror'], WORKSPACE_DELETE_TIMEOUT)
     delete_url = "%s/%s" % (url, workspace_id)
-    if status_returned.lower() in ['active', 'draft']:
+    if status_returned.lower() in ['active', 'draft', 'failed']:
         LOG.info('deleting Schematic workspace and resources for %s', workspace_id)
         delete_url = "%s/%s/?destroyResources=true" % (url, workspace_id)
     else:

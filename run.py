@@ -340,9 +340,9 @@ def delete_workspace(url, workspace_id):
     LOG.info('deleting Schematic workspace for %s', workspace_id)
     status_url = "%s/%s" % (url, workspace_id)
     status_returned = poll_workspace_until(
-        status_url, ['inactive', 'active', 'failed'], WORKSPACE_DELETE_TIMEOUT)
+        status_url, ['inactive', 'active', 'failed', 'draft', 'templateerror'], WORKSPACE_DELETE_TIMEOUT)
     delete_url = "%s/%s" % (url, workspace_id)
-    if status_returned.lower() == 'active':
+    if status_returned.lower() in ['active', 'draft', 'failed']:
         delete_url = "%s/%s/?destroyResources=true" % (url, workspace_id)
     token = get_iam_token()
     refresh_token = get_refresh_token()
