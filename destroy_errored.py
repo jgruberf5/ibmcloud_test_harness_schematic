@@ -107,9 +107,11 @@ def get_refresh_token():
         return REFRESH_TOKEN
 
 
-def get_workspace_id(url, test_id, timeout):
+def get_workspace_id(url, test_id, timeout=30):
     global KNOWN_WORKSPACES
     if test_id in KNOWN_WORKSPACES:
+        LOG.debug('found workspace_id %s for test_id %s in cache',
+                  KNOWN_WORKSPACES[test_id], test_id)
         return KNOWN_WORKSPACES[test_id]
     else:
         end_time = time.time() + timeout
@@ -185,10 +187,11 @@ def poll_workspace_until(url, statuses, timeout):
 
 
 def delete_workspace(test_dir):
+    test_id = os.path.basename(test_dir)
+    LOG.debug('deleting worksapce for test_id: %s', test_id)
     url = None
     with open(os.path.join(test_dir, 'service_endpoint.url'), 'r') as eu:
         url = eu.read()
-    test_id = os.path.basename(test_dir)
     workspace_id = get_workspace_id(url, test_id)
     if not workspace_id:
         shutil.rmtree(test_dir)
@@ -243,7 +246,6 @@ def build_pool():
 
 def runner():
     test_pool = build_pool()
-    LOG.debug('deleting %s', test_pool)
     random.shuffle(test_pool)
     with concurrent.futures.ThreadPoolExecutor(max_workers=CONFIG['thread_pool_size']) as executor:
         for test_path in test_pool:
@@ -252,7 +254,7 @@ def runner():
 
 def initialize():
     global MY_PID, CONFIG, ERRORED_TEST_IDS, WORKSPACE_DELETE_TIMEOUT, \
-           WORKSPACE_RETRY_INTERVAL, WORKSPACE_STATUS_POLL_INTERVAL
+        WORKSPACE_RETRY_INTERVAL, WORKSPACE_STATUS_POLL_INTERVAL
     MY_PID = os.getpid()
     os.makedirs(QUEUE_DIR, exist_ok=True)
     os.makedirs(ERRORED_DIR, exist_ok=True)
