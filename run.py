@@ -152,7 +152,7 @@ def get_iam_token():
 
 def get_refresh_token():
     now = int(time.time())
-    if SESSION_TIMESTAMP > 0 and ((now - SESSION_TIMESTAMP) < SESSION_SECONDS):
+    if SESSION_TIMESTAMP > 0 and ((SESSION_TIMESTAMP - int(time.time())) > 60):
         return REFRESH_TOKEN
     else:
         get_iam_token()
