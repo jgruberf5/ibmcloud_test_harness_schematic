@@ -122,7 +122,7 @@ def get_floating_ip(instance_name):
     else:
         regions = ['us-south', 'us-east', 'eu-gb', 'eu-de', 'jp-tok', 'au-syd']
         for region in regions:
-            url = "%s.iaas.cloud.ibm.com/v1/instances?version=2020-09-08&generation=2" % region
+            url = "https://%s.iaas.cloud.ibm.com/v1/instances?version=2020-09-08&generation=2" % region
             token = get_iam_token()
             headers = {
                 "Accept": "application/json",
@@ -135,7 +135,7 @@ def get_floating_ip(instance_name):
                 DISCOVERED_FLOATING_IPS[instance['name']] = None
                 instance_id = instance['id']
                 LOG.info('getting network interfaces for %s' % instance['name'])
-                nint_url = "%s.iaas.cloud.ibm.com/v1/instances/%s/network_interfaces?version=2020-09-08&generation=2" % (
+                nint_url = "https://%s.iaas.cloud.ibm.com/v1/instances/%s/network_interfaces?version=2020-09-08&generation=2" % (
                     region, instance_id)
                 nint_response = requests.get(nint_url, headers=headers)
                 nint_response_json = nint_response.json()
