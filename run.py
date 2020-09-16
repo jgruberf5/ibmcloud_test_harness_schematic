@@ -132,17 +132,20 @@ def get_iam_token():
         "Content-Type": "application/x-www-form-urlencoded"
     }
     data = "apikey=%s&grant_type=urn:ibm:params:oauth:grant-type:apikey" % CONFIG['api_key']
-    response = requests.post(AUTH_ENDPOINT, headers=headers, data=data)
-    if response.status_code < 300:
-        SESSION_TIMESTAMP = int(time.time())
-        response_json = response.json()
-        SESSION_TOKEN = response_json['access_token']
-        REFRESH_TOKEN = response_json['refresh_token']
-        return SESSION_TOKEN
-    else:
-        LOG.error('could not get an access token %d - %s',
-                  response.status_code, response.content)
-        return None
+    try:
+        response = requests.post(AUTH_ENDPOINT, headers=headers, data=data)
+        if response.status_code < 300:
+            SESSION_TIMESTAMP = int(time.time())
+            response_json = response.json()
+            SESSION_TOKEN = response_json['access_token']
+            REFRESH_TOKEN = response_json['refresh_token']
+            return SESSION_TOKEN
+        else:
+            LOG.error('could not get an access token %d - %s',
+                    response.status_code, response.content)
+            return None
+    except Exception as te:
+        LOG.error('exception while getting IAM token %s - %s', te, response.status_code)
 
 
 def get_refresh_token():
@@ -266,6 +269,9 @@ def do_plan(test_id, url, workspace_id):
             if status_returned.lower() == 'failed':
                 status_message = "workspace %s plan with activity_id %s returned status %s" % (
                     workspace_id, activity_id, status_returned)
+                log = get_log(url, workspace_id, activity_id)
+                update_log = {"terraform_plan_log": log}
+                update_report(test_id, update_log)
                 return (None, status_message)
             else:
                 LOG.info('polling for workspace plan to complete for %s', test_id)
@@ -277,6 +283,9 @@ def do_plan(test_id, url, workspace_id):
                     else:
                         status_message = "workspace %s plan with activity_id %s returned status %s" % (
                             workspace_id, activity_id, status_returned)
+                        log = get_log(url, workspace_id, activity_id)
+                        update_log = {"terraform_plan_log": log}
+                        update_report(test_id, update_log)
                         return (None, status_message)
                 else:
                     status_message = "workspace %s plan timed-out" % plan_url
@@ -325,6 +334,9 @@ def do_apply(test_id, url, workspace_id):
             else:
                 status_message = "workspace %s apply with activity_id %s returned status %s" % (
                     workspace_id, activity_id, status_returned)
+                log = get_log(url, workspace_id, activity_id)
+                update_log = {"terraform_apply_log": log}
+                update_report(test_id, update_log)
                 return (None, status_message)
         else:
             status_message = "workspace %s apply timed-out" % apply_url
@@ -426,18 +438,18 @@ def run_test(test_path):
     }
     (workspace_id, create_status) = create_workspace(test_id, url, data)
     if workspace_id:
-        start_report(test_id, start_data)
-        update_report(
-            test_id, {"workspace_id": workspace_id, "schematic_workspace_create_status": create_status})
         (plan_activity_id, plan_status) = do_plan(test_id, url, workspace_id)
         if plan_activity_id:
-            update_report(
-                test_id, {"workspace_id": workspace_id, "terraform_plan_status": create_status})
+            start_report(test_id, start_data)
+            update_report( test_id, {
+                "workspace_id": workspace_id,
+                "schematic_workspace_create_status": create_status,
+                "terraform_plan_status": create_status
+            })
             log = get_log(url, workspace_id, plan_activity_id)
             update_log = {"terraform_plan_log": log}
             update_report(test_id, update_log)
-            (apply_activity_id, apply_status) = do_apply(
-                test_id, url, workspace_id)
+            (apply_activity_id, apply_status) = do_apply(test_id, url, workspace_id)
             if apply_activity_id:
                 update_report(
                     test_id, {"workspace_id": workspace_id, "terraform_apply_status": apply_status})
