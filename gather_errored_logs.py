@@ -29,7 +29,7 @@ import shutil
 import random
 import subprocess
 
-LOG = logging.getLogger('ibmcloud_test_harness_destroy_errored')
+LOG = logging.getLogger('ibmcloud_test_harness_get_errored_logs')
 LOG.setLevel(logging.DEBUG)
 FORMATTER = logging.Formatter(
     '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -134,12 +134,14 @@ def get_floating_ip(instance_name):
             for instance in response_json['instances']:
                 DISCOVERED_FLOATING_IPS[instance['name']] = None
                 instance_id = instance['id']
+                LOG.info('getting network interfaces for %s' % instance['name'])
                 nint_url = "%s.iaas.cloud.ibm.com/v1/instances/%s/network_interfaces?version=2020-09-08&generation=2" % (
                     region, instance_id)
                 nint_response = requests.get(nint_url, headers=headers)
                 nint_response_json = nint_response.json()
                 for nint in nint_response_json['network_interfaces']:
                     if 'floating_ips' in nint and len(nint['floating_ips']) > 0:
+                        LOG.info('found floating IP %s for instance %s', nint['floating_ips'][0]['address'], instance['name'])
                         DISCOVERED_FLOATING_IPS[instance['name']
                                                 ] = nint['floating_ips'][0]['address']
         if instance_name in DISCOVERED_FLOATING_IPS:
@@ -150,11 +152,14 @@ def get_floating_ip(instance_name):
 def get_logs(test_dir):
     instance_name = "t-%s" % os.path.basename(test_dir)
     ip_address = get_floating_ip(instance_name)
+    LOG.info('instance %s is at %s', instance_name, ip_address)
     if ip_address:
-        subprocess.call("scp root@%s:/var/log/restjava* ./" %
-                        ip_address, cwd=test_dir, shell=True)
-        subprocess.call("scp root@%s:/var/log/restnoded/* ./" %
-                        ip_address, cwd=test_dir, shell=True)
+        cmd = "scp root@%s:/var/log/restjava* ./" % ip_address
+        LOG.info('running cmd %s', cmd)
+        subprocess.call(cmd, cwd=test_dir, shell=True)
+        cmd = "scp root@%s:/var/log/restnoded/* ./" % ip_address
+        LOG.info('running cmd %s', cmd)
+        subprocess.call(cmd, cwd=test_dir, shell=True)
 
 
 def build_pool():
