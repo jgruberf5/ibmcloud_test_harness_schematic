@@ -48,7 +48,7 @@ AUTH_ENDPOINT = 'https://iam.cloud.ibm.com/identity/token'
 SESSION_TOKEN = None
 REFRESH_TOKEN = None
 SESSION_TIMESTAMP = 0
-SESSION_SECONDS = 1800
+
 REQUEST_RETRIES = 10
 REQUEST_DELAY = 10
 
@@ -123,8 +123,7 @@ def poll_report(test_id):
 
 def get_iam_token():
     global SESSION_TOKEN, REFRESH_TOKEN, SESSION_TIMESTAMP
-    now = int(time.time())
-    if SESSION_TIMESTAMP > 0 and ((now - SESSION_TIMESTAMP) < SESSION_SECONDS):
+    if SESSION_TIMESTAMP > 0 and ((SESSION_TIMESTAMP - int(time.time())) > 60):
         return SESSION_TOKEN
     headers = {
         "Accept": "application/json",
@@ -135,17 +134,20 @@ def get_iam_token():
     try:
         response = requests.post(AUTH_ENDPOINT, headers=headers, data=data)
         if response.status_code < 300:
-            SESSION_TIMESTAMP = int(time.time())
             response_json = response.json()
+            SESSION_TIMESTAMP = (int(time.time()) + int(response_json['expires_in']))
             SESSION_TOKEN = response_json['access_token']
             REFRESH_TOKEN = response_json['refresh_token']
             return SESSION_TOKEN
         else:
             LOG.error('could not get an access token %d - %s',
                     response.status_code, response.content)
+            SESSION_TIMESTAMP = 0
             return None
     except Exception as te:
         LOG.error('exception while getting IAM token %s - %s', te, response.status_code)
+        SESSION_TIMESTAMP = 0
+        return None
 
 
 def get_refresh_token():
