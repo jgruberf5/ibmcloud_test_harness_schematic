@@ -120,6 +120,7 @@ def get_floating_ip(instance_name):
     if instance_name in DISCOVERED_FLOATING_IPS:
         return DISCOVERED_FLOATING_IPS[instance_name]
     else:
+        LOG.info('discovering floating IPs by instance names')
         regions = ['us-south', 'us-east', 'eu-gb', 'eu-de', 'jp-tok', 'au-syd']
         for region in regions:
             url = "https://%s.iaas.cloud.ibm.com/v1/instances?version=2020-09-08&generation=2" % region
@@ -134,14 +135,14 @@ def get_floating_ip(instance_name):
             for instance in response_json['instances']:
                 DISCOVERED_FLOATING_IPS[instance['name']] = None
                 instance_id = instance['id']
-                LOG.info('getting network interfaces for %s' % instance['name'])
+                #LOG.info('getting network interfaces for %s' % instance['name'])
                 nint_url = "https://%s.iaas.cloud.ibm.com/v1/instances/%s/network_interfaces?version=2020-09-08&generation=2" % (
                     region, instance_id)
                 nint_response = requests.get(nint_url, headers=headers)
                 nint_response_json = nint_response.json()
                 for nint in nint_response_json['network_interfaces']:
                     if 'floating_ips' in nint and len(nint['floating_ips']) > 0:
-                        LOG.info('found floating IP %s for instance %s', nint['floating_ips'][0]['address'], instance['name'])
+                        # LOG.info('found floating IP %s for instance %s', nint['floating_ips'][0]['address'], instance['name'])
                         DISCOVERED_FLOATING_IPS[instance['name']
                                                 ] = nint['floating_ips'][0]['address']
         if instance_name in DISCOVERED_FLOATING_IPS:
@@ -154,10 +155,17 @@ def get_logs(test_dir):
     ip_address = get_floating_ip(instance_name)
     LOG.info('instance %s is at %s', instance_name, ip_address)
     if ip_address:
-        cmd = "scp root@%s:/var/log/restjava* ./" % ip_address
+        with(open(os.path.join(test_dir, 'login.sh'), 'w')) as login_script:
+            login_script.write("#!/bin/bash\nssh -o 'StrictHostKeyChecking=no' root@%s\n" % ip_address)
+        cmd = "chmod +x %s" % os.path.join(test_dir, 'login.sh')
+        subprocess.call(cmd, cwd=test_dir, shell=True)
+        cmd = "scp -o 'StrictHostKeyChecking=no' root@%s:/var/log/restjava* ./" % ip_address
         LOG.info('running cmd %s', cmd)
         subprocess.call(cmd, cwd=test_dir, shell=True)
-        cmd = "scp root@%s:/var/log/restnoded/* ./" % ip_address
+        cmd = "scp -o 'StrictHostKeyChecking=no' root@%s:/var/log/restnoded/* ./" % ip_address
+        LOG.info('running cmd %s', cmd)
+        subprocess.call(cmd, cwd=test_dir, shell=True)
+        cmd = "scp -o 'StrictHostKeyChecking=no' root@%s:/var/log/f5-cloudinit.log ./" % ip_address
         LOG.info('running cmd %s', cmd)
         subprocess.call(cmd, cwd=test_dir, shell=True)
 
@@ -175,6 +183,7 @@ def build_pool():
 
 
 def runner():
+    get_floating_ip('prime')
     test_pool = build_pool()
     random.shuffle(test_pool)
     with concurrent.futures.ThreadPoolExecutor(max_workers=CONFIG['thread_pool_size']) as executor:
