@@ -473,14 +473,8 @@ def run_test(test_path):
                     "terraform_failed": "apply failed with status %s" % apply_status
                 }
                 stop_report(test_id, results)
-                if 'preserve_errored_instances' in CONFIG and CONFIG['preserve_errored_instances']:
-                    LOG.error(
-                        'preserving errored instance for test: %s for debug', test_id)
-                    os.makedirs(ERRORED_DIR, exist_ok=True)
-                    shutil.move(test_dir, os.path.join(ERRORED_DIR, test_id))
-                else:
-                    delete_workspace(url, workspace_id)
-                    shutil.rmtree(test_dir)
+                delete_workspace(url, workspace_id)
+                shutil.rmtree(test_dir)
                 return
         else:
             update_data = {
@@ -491,14 +485,8 @@ def run_test(test_path):
                 "terraform_failed": "plan failed with status %s" % plan_status
             }
             stop_report(test_id, results)
-            if 'preserve_errored_instances' in CONFIG and CONFIG['preserve_errored_instances']:
-                LOG.error(
-                    'preserving errored instance for test: %s for debug', test_id)
-                os.makedirs(ERRORED_DIR, exist_ok=True)
-                shutil.move(test_dir, os.path.join(ERRORED_DIR, test_id))
-            else:
-                delete_workspace(url, workspace_id)
-                shutil.rmtree(test_dir)
+            delete_workspace(url, workspace_id)
+            shutil.rmtree(test_dir)
             return
     else:
         LOG.error('failed to create schematic workspace: %s', create_status)
