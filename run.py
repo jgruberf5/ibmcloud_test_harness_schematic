@@ -315,13 +315,13 @@ def do_apply(test_id, url, workspace_id):
         if response.status_code == 409:
             LOG.debug('workspace locked.. retrying')
         time.sleep(WORKSPACE_RETRY_INTERVAL)
-        response = requests.post(apply_url, headers=headers)
+        response = requests.put(apply_url, headers=headers)
         LOG.info('workspace apply returned %d for %s',
                  response.status_code, test_id)
     while response.status_code == 429:
         LOG.debug('exceeded throttling limit.. retrying')
         time.sleep(WORKSPACE_RETRY_INTERVAL)
-        response = requests.post(apply_url, headers=headers)
+        response = requests.put(apply_url, headers=headers)
         LOG.info('workspace apply returned %d for %s',
                  response.status_code, test_id)
     if response.status_code < 300:
@@ -378,7 +378,7 @@ def delete_workspace(url, workspace_id):
     while response.status_code == 429:
         LOG.debug('exceeded throttling limit.. retrying')
         time.sleep(WORKSPACE_RETRY_INTERVAL)
-        response = requests.post(delete_url, headers=headers)
+        response = requests.delete(delete_url, headers=headers)
         LOG.info('workspace delete returned %d for %s',
                  response.status_code, delete_url)
     if response.status_code < 300:
@@ -404,21 +404,19 @@ def get_log(url, workspace_id, activity_id):
     while response.status_code == 409:
         LOG.debug('workspace locked.. retrying')
         time.sleep(WORKSPACE_RETRY_INTERVAL)
-        response = requests.delete(log_url, headers=headers)
+        response = requests.get(log_url, headers=headers)
         LOG.info('activity get log returned %d for %s',
                  response.status_code, activity_id)
     while response.status_code == 429:
         LOG.debug('exceeded throttling limit.. retrying')
         time.sleep(WORKSPACE_RETRY_INTERVAL)
-        response = requests.post(log_url, headers=headers)
+        response = requests.get(log_url, headers=headers)
         LOG.info('activity get log returned %d for %s',
                  response.status_code, activity_id)
     if response.status_code < 300:
         log_json = response.json()
         log_url = log_json['templates'][0]['log_url']
-        log_response = requests.get(log_url, headers=headers)
-        if response.status_code < 300:
-            return log_response.text
+        return response.text
     else:
         return None
 
