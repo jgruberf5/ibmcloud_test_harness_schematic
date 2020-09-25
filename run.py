@@ -55,6 +55,7 @@ REQUEST_DELAY = 10
 WORKSPACE_CREATE_TIMEOUT = 300
 WORKSPACE_PLAN_TIMEOUT = 300
 WORKSPACE_APPLY_TIMEOUT = 300
+WORKSPACE_DESTROY_TIMEOUT = 300
 WORKSPACE_DELETE_TIMEOUT = 300
 WORKSPACE_RETRY_INTERVAL = 10
 WORKSPACE_STATUS_POLL_INTERVAL = 10
@@ -135,17 +136,19 @@ def get_iam_token():
         response = requests.post(AUTH_ENDPOINT, headers=headers, data=data)
         if response.status_code < 300:
             response_json = response.json()
-            SESSION_TIMESTAMP = (int(time.time()) + int(response_json['expires_in']))
+            SESSION_TIMESTAMP = (int(time.time()) +
+                                 int(response_json['expires_in']))
             SESSION_TOKEN = response_json['access_token']
             REFRESH_TOKEN = response_json['refresh_token']
             return SESSION_TOKEN
         else:
             LOG.error('could not get an access token %d - %s',
-                    response.status_code, response.content)
+                      response.status_code, response.content)
             SESSION_TIMESTAMP = 0
             return None
     except Exception as te:
-        LOG.error('exception while getting IAM token %s - %s', te, response.status_code)
+        LOG.error('exception while getting IAM token %s - %s',
+                  te, response.status_code)
         SESSION_TIMESTAMP = 0
         return None
 
@@ -350,6 +353,59 @@ def do_apply(test_id, url, workspace_id):
                 (test_id, response.status_code, response.text))
 
 
+def do_destroy(test_id, url, workspace_id):
+    LOG.info('destroying Schematic workspace for %s', test_id)
+    destroy_url = "%s/%s/destroy" % (url, workspace_id)
+    token = get_iam_token()
+    refresh_token = get_refresh_token()
+    headers = {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "Authorization": "Bearer %s" % token,
+        "refresh_token": refresh_token
+    }
+    response = requests.put(destroy_url, headers=headers)
+    LOG.info('workspace destroy returned %d for %s',
+             response.status_code, test_id)
+    while response.status_code == 409:
+        if response.status_code == 409:
+            LOG.debug('workspace locked.. retrying')
+        time.sleep(WORKSPACE_RETRY_INTERVAL)
+        response = requests.put(destroy_url, headers=headers)
+        LOG.info('workspace apply returned %d for %s',
+                 response.status_code, test_id)
+    while response.status_code == 429:
+        LOG.debug('exceeded throttling limit.. retrying')
+        time.sleep(WORKSPACE_RETRY_INTERVAL)
+        response = requests.put(destroy_url, headers=headers)
+        LOG.info('workspace apply returned %d for %s',
+                 response.status_code, test_id)
+    if response.status_code < 300:
+        activity_id = response.json()['activityid']
+        status_url = "%s/%s" % (url, workspace_id)
+        LOG.info('polling for workspace apply to complete for %s', test_id)
+        status_returned = poll_workspace_until(
+            status_url, ['inactive', 'failed'], WORKSPACE_DESTROY_TIMEOUT)
+        if status_returned:
+            if status_returned.lower() == 'inactive':
+                return (activity_id, status_returned)
+            else:
+                status_message = "workspace %s destory with activity_id %s returned status %s" % (
+                    workspace_id, activity_id, status_returned)
+                log = get_log(url, workspace_id, activity_id)
+                update_log = {"terraform_destroy_log": log}
+                update_report(test_id, update_log)
+                return (None, status_message)
+        else:
+            status_message = "workspace %s apply timed-out" % destroy_url
+            return (None, status_message)
+    else:
+        LOG.error('could not apply workspace for %s - %d - %s',
+                  test_id, response.status_code, response.text)
+        return (None, 'could not apply workspace for %s - %d - %s' %
+                (test_id, response.status_code, response.text))
+
+
 def delete_workspace(url, workspace_id):
     LOG.info('deleting Schematic workspace for %s', workspace_id)
     status_url = "%s/%s" % (url, workspace_id)
@@ -416,6 +472,7 @@ def get_log(url, workspace_id, activity_id):
     if response.status_code < 300:
         log_json = response.json()
         log_url = log_json['templates'][0]['log_url']
+        response = requests.get(log_url, headers=headers)
         return response.text
     else:
         return None
@@ -436,49 +493,101 @@ def run_test(test_path):
         'image_name': image,
         'type': ttype
     }
+    create_start = datetime.datetime.utcnow().timestamp()
     (workspace_id, create_status) = create_workspace(test_id, url, data)
     if workspace_id:
+        create_stop = datetime.datetime.utcnow().timestamp()
+        start_report(test_id, start_data)
+        update_report(test_id, {
+            'workspace_create_start': create_start,
+            'workspace_create_stop': create_stop,
+            'workspace_create_duration': int(create_stop - create_start),
+            'workspace_create_result_code': 0,
+            'workspace_id': workspace_id,
+            'workspace_create_status': create_status,
+            'terraform_result_code': -1
+        })
+        plan_start = datetime.datetime.utcnow().timestamp()
         (plan_activity_id, plan_status) = do_plan(test_id, url, workspace_id)
         if plan_activity_id:
-            start_report(test_id, start_data)
-            update_report( test_id, {
-                "workspace_id": workspace_id,
-                "schematic_workspace_create_status": create_status,
-                "terraform_plan_status": create_status
+            plan_stop = datetime.datetime.utcnow().timestamp()
+            update_report(test_id, {
+                'terraform_plan_start': plan_start,
+                'terraform_plan_stop': plan_stop,
+                'terraform_plan_duration': int(plan_stop - plan_start),
+                'terraform_plan_result_code': 0,
+                'terraform_plan_status': plan_status
             })
             log = get_log(url, workspace_id, plan_activity_id)
-            update_log = {"terraform_plan_log": log}
+            update_log = {'terraform_plan_log': log}
             update_report(test_id, update_log)
-            (apply_activity_id, apply_status) = do_apply(test_id, url, workspace_id)
+            apply_start = datetime.datetime.utcnow().timestamp()
+            (apply_activity_id, apply_status) = do_apply(
+                test_id, url, workspace_id)
             if apply_activity_id:
-                update_report(
-                    test_id, {"workspace_id": workspace_id, "terraform_apply_status": apply_status})
-                log = get_log(url, workspace_id, apply_activity_id)
-                now = datetime.datetime.utcnow()
-                update_data = {
+                apply_stop = datetime.datetime.utcnow().timestamp()
+                update_report(test_id, {
+                    'terraform_apply_start': apply_start,
+                    'terraform_apply_stop': apply_stop,
+                    'terraform_apply_duration': int(apply_stop - apply_start),
                     'terraform_apply_result_code': 0,
-                    'terraform_apply_log': log,
-                    'terraform_apply_completed_at': now.timestamp(),
-                    'terraform_apply_completed_at_readable': now.strftime('%Y-%m-%d %H:%M:%S UTC')
-                }
-                update_report(test_id, update_data)
+                    'terraform_apply_status': apply_status,
+                    'terraform_result_code': 0
+                })
+                log = get_log(url, workspace_id, apply_activity_id)
+                update_log = {'terraform_apply_log': log, }
+                update_report(test_id, update_log)
             else:
+                apply_stop = datetime.datetime.utcnow().timestamp()
                 update_data = {
+                    'terraform_apply_start': apply_start,
+                    'terraform_apply_stop': apply_stop,
+                    'terraform_apply_duration': int(apply_stop - apply_start),
                     'terraform_apply_result_code': 1,
+                    'terraform_result_code': 1,
+                    'terraform_apply_status': apply_status
                 }
                 update_report(test_id, update_data)
                 results = {
                     "terraform_failed": "apply failed with status %s" % apply_status
                 }
+                destroy_start = datetime.datetime.utcnow().timestamp()
+                (destroy_activity_id, destroy_status) = do_destroy(
+                    test_id, url, workspace_id)
+                if destroy_activity_id:
+                    destroy_stop = datetime.datetime.utcnow().timestamp()
+                    update_report(test_id, {
+                        'terraform_destroy_start': destroy_start,
+                        'terraform_destroy_stop': destroy_stop,
+                        'terraform_destroy_duration': int(destroy_stop - destroy_start),
+                        'terraform_destroy_result_code': 0,
+                        'terraform_destroy_status': destroy_status
+                    })
+                    log = get_log(url, workspace_id, destroy_activity_id)
+                    update_log = {'terraform_apply_log': log, }
+                    update_report(test_id, update_log)
+                else:
+                    destroy_stop = datetime.datetime.utcnow().timestamp()
+                    update_report(test_id, {
+                        'terraform_destroy_start': destroy_start,
+                        'terraform_destroy_stop': destroy_stop,
+                        'terraform_destroy_duration': int(destroy_stop - destroy_start),
+                        'terraform_destroy_result_code': 1,
+                        'terraform_destroy_status': destroy_status
+                    })
                 stop_report(test_id, results)
                 delete_workspace(url, workspace_id)
                 shutil.rmtree(test_dir)
                 return
         else:
+            plan_stop = datetime.datetime.utcnow().timestamp()
             update_data = {
-                'terraform_apply_result_code': 1,
+                'terraform_plan_start': plan_start,
+                'terraform_plan_stop': plan_stop,
+                'terraform_plan_duration': int(plan_stop - plan_start),
+                'terraform_plan_result_code': 1,
+                'terraform_plan_status': plan_status
             }
-            update_report(test_id, update_data)
             results = {
                 "terraform_failed": "plan failed with status %s" % plan_status
             }
@@ -491,20 +600,16 @@ def run_test(test_path):
         LOG.error('POSTed data was %s', json.dumps(data))
         start_report(test_id, start_data)
         update_data = {
-            'terraform_apply_result_code': 1,
+            'workspace_create_result_code': 1,
+            'workspace_create_status': create_status,
+            'terraform_result_code': 1,
         }
         update_report(test_id, update_data)
         results = {
             "terraform_failed": "schematics workspace create failed with status %s" % create_status
         }
         stop_report(test_id, results)
-        if 'preserve_errored_instances' in CONFIG and CONFIG['preserve_errored_instances']:
-            LOG.error(
-                'preserving errored instance for test: %s for debug', test_id)
-            os.makedirs(ERRORED_DIR, exist_ok=True)
-            shutil.move(test_dir, os.path.join(ERRORED_DIR, test_id))
-        else:
-            shutil.rmtree(test_dir)
+        shutil.rmtree(test_dir)
         return
 
     # workspace complete pool for return
@@ -520,6 +625,31 @@ def run_test(test_path):
             shutil.move(test_dir, os.path.join(ERRORED_DIR, test_id))
         else:
             LOG.info('destroying cloud resources for test %s', test_id)
+            destroy_start = datetime.datetime.utcnow().timestamp()
+            (destroy_activity_id, destroy_status) = do_destroy(
+                test_id, url, workspace_id)
+            if destroy_activity_id:
+                destroy_stop = datetime.datetime.utcnow().timestamp()
+                update_report(test_id, {
+                    'terraform_destroy_start': destroy_start,
+                    'terraform_destroy_stop': destroy_stop,
+                    'terraform_destroy_duration': int(destroy_stop - destroy_start),
+                    'terraform_destroy_result_code': 0,
+                    'terraform_destroy_status': destroy_status
+                })
+                log = get_log(url, workspace_id, destroy_activity_id)
+                update_log = {'terraform_apply_log': log, }
+                update_report(test_id, update_log)
+            else:
+                destroy_stop = datetime.datetime.utcnow().timestamp()
+                update_report(test_id, {
+                    'terraform_destroy_start': destroy_start,
+                    'terraform_destroy_stop': destroy_stop,
+                    'terraform_destroy_duration': int(destroy_stop - destroy_start),
+                    'terraform_destroy_result_code': 1,
+                    'terraform_result_code': 1,
+                    'terraform_destroy_status': destroy_status
+                })
             delete_workspace(url, workspace_id)
             shutil.rmtree(test_dir)
     else:
@@ -532,10 +662,60 @@ def run_test(test_path):
             else:
                 LOG.error(
                     'destroying cloud resources for errored test %s', test_id)
+                destroy_start = datetime.datetime.utcnow().timestamp()
+                (destroy_activity_id, destroy_status) = do_destroy(
+                    test_id, url, workspace_id)
+                if destroy_activity_id:
+                    destroy_stop = datetime.datetime.utcnow().timestamp()
+                    update_report(test_id, {
+                        'terraform_destroy_start': destroy_start,
+                        'terraform_destroy_stop': destroy_stop,
+                        'terraform_destroy_duration': int(destroy_stop - destroy_start),
+                        'terraform_destroy_result_code': 0,
+                        'terraform_destroy_status': destroy_status
+                    })
+                    log = get_log(url, workspace_id, destroy_activity_id)
+                    update_log = {'terraform_apply_log': log, }
+                    update_report(test_id, update_log)
+                else:
+                    destroy_stop = datetime.datetime.utcnow().timestamp()
+                    update_report(test_id, {
+                        'terraform_destroy_start': destroy_start,
+                        'terraform_destroy_stop': destroy_stop,
+                        'terraform_destroy_duration': int(destroy_stop - destroy_start),
+                        'terraform_destroy_result_code': 1,
+                        'terraform_result_code': 1,
+                        'terraform_destroy_status': destroy_status
+                    })
                 delete_workspace(url, workspace_id)
                 shutil.rmtree(test_dir)
         else:
             LOG.info('destroying cloud resources for completed test %s', test_id)
+            destroy_start = datetime.datetime.utcnow().timestamp()
+            (destroy_activity_id, destroy_status) = do_destroy(
+                test_id, url, workspace_id)
+            if destroy_activity_id:
+                destroy_stop = datetime.datetime.utcnow().timestamp()
+                update_report(test_id, {
+                    'terraform_destroy_start': destroy_start,
+                    'terraform_destroy_stop': destroy_stop,
+                    'terraform_destroy_duration': int(destroy_stop - destroy_start),
+                    'terraform_destroy_result_code': 0,
+                    'terraform_destroy_status': destroy_status
+                })
+                log = get_log(url, workspace_id, destroy_activity_id)
+                update_log = {'terraform_apply_log': log, }
+                update_report(test_id, update_log)
+            else:
+                destroy_stop = datetime.datetime.utcnow().timestamp()
+                update_report(test_id, {
+                    'terraform_destroy_start': destroy_start,
+                    'terraform_destroy_stop': destroy_stop,
+                    'terraform_destroy_duration': int(destroy_stop - destroy_start),
+                    'terraform_destroy_result_code': 1,
+                    'terraform_result_code': 1,
+                    'terraform_destroy_status': destroy_status
+                })
             delete_workspace(url, workspace_id)
             if 'keep_completed_state' in CONFIG and CONFIG['keep_completed_state']:
                 shutil.move(test_dir, os.path.join(COMPLETE_DIR, test_id))
@@ -601,8 +781,9 @@ def runner():
 def initialize():
     global MY_PID, CONFIG, WORKSPACE_CREATE_TIMEOUT, \
         WORKSPACE_PLAN_TIMEOUT, WORKSPACE_APPLY_TIMEOUT, \
-        WORKSPACE_DELETE_TIMEOUT, WORKSPACE_STATUS_POLL_INTERVAL, \
-        WORKSPACE_RETRY_INTERVAL, REPORT_REQUEST_INTERVAL
+        WORKSPACE_DESTROY_TIMEOUT, WORKSPACE_DELETE_TIMEOUT, \
+        WORKSPACE_STATUS_POLL_INTERVAL, WORKSPACE_RETRY_INTERVAL, \
+        REPORT_REQUEST_INTERVAL
     MY_PID = os.getpid()
     os.makedirs(QUEUE_DIR, exist_ok=True)
     os.makedirs(RUNNING_DIR, exist_ok=True)
@@ -619,6 +800,8 @@ def initialize():
         WORKSPACE_PLAN_TIMEOUT = config['workspace_plan_timeout']
     if 'workspace_apply_timeout' in config:
         WORKSPACE_APPLY_TIMEOUT = config['workspace_apply_timeout']
+    if 'workspace_destroy_timeout' in config:
+        WORKSPACE_DESTROY_TIMEOUT = config['workspace_destroy_timeout']
     if 'workspace_delete_timeout' in config:
         WORKSPACE_DELETE_TIMEOUT = config['workspace_delete_timeout']
     if 'workspace_status_poll_interval' in config:
