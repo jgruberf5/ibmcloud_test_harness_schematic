@@ -496,8 +496,8 @@ def run_test(test_path):
     create_start = datetime.datetime.utcnow().timestamp()
     (workspace_id, create_status) = create_workspace(test_id, url, data)
     if workspace_id:
-        with open(os.path.join(test_path, 'STATUS'), 'w') as status_file:
-            status_file.write('CREATED')
+        # with open(os.path.join(test_path, 'STATUS'), 'w') as status_file:
+        #    status_file.write('CREATED')
         create_stop = datetime.datetime.utcnow().timestamp()
         start_report(test_id, start_data)
         update_report(test_id, {
@@ -512,8 +512,8 @@ def run_test(test_path):
         plan_start = datetime.datetime.utcnow().timestamp()
         (plan_activity_id, plan_status) = do_plan(test_id, url, workspace_id)
         if plan_activity_id:
-            with open(os.path.join(test_path, 'STATUS'), 'w') as status_file:
-                status_file.write('PLANNED')
+            #with open(os.path.join(test_path, 'STATUS'), 'w') as status_file:
+            #    status_file.write('PLANNED')
             plan_stop = datetime.datetime.utcnow().timestamp()
             update_report(test_id, {
                 'terraform_plan_start': plan_start,
@@ -529,8 +529,8 @@ def run_test(test_path):
             (apply_activity_id, apply_status) = do_apply(
                 test_id, url, workspace_id)
             if apply_activity_id:
-                with open(os.path.join(test_path, 'STATUS'), 'w') as status_file:
-                    status_file.write('APPLY')
+                #with open(os.path.join(test_path, 'STATUS'), 'w') as status_file:
+                #    status_file.write('APPLY')
                 apply_stop = datetime.datetime.utcnow().timestamp()
                 update_report(test_id, {
                     'terraform_apply_start': apply_start,
@@ -544,8 +544,8 @@ def run_test(test_path):
                 update_log = {'terraform_apply_log': log, }
                 update_report(test_id, update_log)
             else:
-                with open(os.path.join(test_path, 'STATUS'), 'w') as status_file:
-                    status_file.write('FAILED_APPLY')
+                #with open(os.path.join(test_path, 'STATUS'), 'w') as status_file:
+                #    status_file.write('FAILED_APPLY')
                 apply_stop = datetime.datetime.utcnow().timestamp()
                 update_data = {
                     'terraform_apply_start': apply_start,
@@ -563,8 +563,8 @@ def run_test(test_path):
                 (destroy_activity_id, destroy_status) = do_destroy(
                     test_id, url, workspace_id)
                 if destroy_activity_id:
-                    with open(os.path.join(test_path, 'STATUS'), 'w') as status_file:
-                        status_file.write('DESTROYED')
+                    #with open(os.path.join(test_path, 'STATUS'), 'w') as status_file:
+                    #    status_file.write('DESTROYED')
                     destroy_stop = datetime.datetime.utcnow().timestamp()
                     update_report(test_id, {
                         'terraform_destroy_start': destroy_start,
@@ -577,8 +577,8 @@ def run_test(test_path):
                     update_log = {'terraform_destroy_log': log, }
                     update_report(test_id, update_log)
                 else:
-                    with open(os.path.join(test_path, 'STATUS'), 'w') as status_file:
-                        status_file.write('FAILED_DESTROY')
+                    #with open(os.path.join(test_path, 'STATUS'), 'w') as status_file:
+                    #    status_file.write('FAILED_DESTROY')
                     destroy_stop = datetime.datetime.utcnow().timestamp()
                     update_report(test_id, {
                         'terraform_destroy_start': destroy_start,
@@ -592,16 +592,16 @@ def run_test(test_path):
                 shutil.rmtree(test_dir)
                 return
         else:
-            with open(os.path.join(test_path, 'STATUS'), 'w') as status_file:
-                status_file.write('FAILED_PLAN')
+            # with open(os.path.join(test_path, 'STATUS'), 'w') as status_file:
+            #    status_file.write('FAILED_PLAN')
             plan_stop = datetime.datetime.utcnow().timestamp()
-            update_data = {
-                'terraform_plan_start': plan_start,
-                'terraform_plan_stop': plan_stop,
-                'terraform_plan_duration': int(plan_stop - plan_start),
-                'terraform_plan_result_code': 1,
-                'terraform_plan_status': plan_status
-            }
+            update_report(test_id,{
+                    'terraform_plan_start': plan_start,
+                    'terraform_plan_stop': plan_stop,
+                    'terraform_plan_duration': int(plan_stop - plan_start),
+                    'terraform_plan_result_code': 1,
+                    'terraform_plan_status': plan_status
+                })
             results = {
                 "terraform_failed": "plan failed with status %s" % plan_status
             }
@@ -612,8 +612,8 @@ def run_test(test_path):
     else:
         LOG.error('failed to create schematic workspace: %s', create_status)
         LOG.error('POSTed data was %s', json.dumps(data))
-        with open(os.path.join(test_path, 'STATUS'), 'w') as status_file:
-            status_file.write('FAILED_CREATE')
+        #with open(os.path.join(test_path, 'STATUS'), 'w') as status_file:
+        #    status_file.write('FAILED_CREATE')
         start_report(test_id, start_data)
         update_data = {
             'workspace_create_result_code': 1,
@@ -635,8 +635,8 @@ def run_test(test_path):
                    int(CONFIG['test_timeout'])}
         stop_report(test_id, results)
         if 'preserve_timed_out_instances' in CONFIG and CONFIG['preserve_timed_out_instances']:
-            with open(os.path.join(test_path, 'STATUS'), 'w') as status_file:
-                status_file.write('TIMED_OUT')
+            #with open(os.path.join(test_path, 'STATUS'), 'w') as status_file:
+            #    status_file.write('TIMED_OUT')
             LOG.error(
                 'preserving timedout instance for test: %s for debug', test_id)
             os.makedirs(ERRORED_DIR, exist_ok=True)
@@ -647,8 +647,8 @@ def run_test(test_path):
             (destroy_activity_id, destroy_status) = do_destroy(
                 test_id, url, workspace_id)
             if destroy_activity_id:
-                with open(os.path.join(test_path, 'STATUS'), 'w') as status_file:
-                    status_file.write('DESTROYED')
+                #with open(os.path.join(test_path, 'STATUS'), 'w') as status_file:
+                #    status_file.write('DESTROYED')
                 destroy_stop = datetime.datetime.utcnow().timestamp()
                 update_report(test_id, {
                     'terraform_destroy_start': destroy_start,
@@ -661,8 +661,8 @@ def run_test(test_path):
                 update_log = {'terraform_apply_log': log, }
                 update_report(test_id, update_log)
             else:
-                with open(os.path.join(test_path, 'STATUS'), 'w') as status_file:
-                    status_file.write('FAILED_DESTROY')
+                #with open(os.path.join(test_path, 'STATUS'), 'w') as status_file:
+                #    status_file.write('FAILED_DESTROY')
                 destroy_stop = datetime.datetime.utcnow().timestamp()
                 update_report(test_id, {
                     'terraform_destroy_start': destroy_start,
@@ -676,8 +676,8 @@ def run_test(test_path):
             shutil.rmtree(test_dir)
     else:
         if results['results']['status'] == "ERROR":
-            with open(os.path.join(test_path, 'STATUS'), 'w') as status_file:
-                status_file.write('ERRORED')
+            #with open(os.path.join(test_path, 'STATUS'), 'w') as status_file:
+            #    status_file.write('ERRORED')
             if 'preserve_errored_instances' in CONFIG and CONFIG['preserve_errored_instances']:
                 LOG.error(
                     'preserving errored instance for test: %s for debug', test_id)
@@ -690,8 +690,8 @@ def run_test(test_path):
                 (destroy_activity_id, destroy_status) = do_destroy(
                     test_id, url, workspace_id)
                 if destroy_activity_id:
-                    with open(os.path.join(test_path, 'STATUS'), 'w') as status_file:
-                        status_file.write('DESTROYED')
+                    #with open(os.path.join(test_path, 'STATUS'), 'w') as status_file:
+                    #    status_file.write('DESTROYED')
                     destroy_stop = datetime.datetime.utcnow().timestamp()
                     update_report(test_id, {
                         'terraform_destroy_start': destroy_start,
@@ -704,8 +704,8 @@ def run_test(test_path):
                     update_log = {'terraform_apply_log': log, }
                     update_report(test_id, update_log)
                 else:
-                    with open(os.path.join(test_path, 'STATUS'), 'w') as status_file:
-                        status_file.write('FAILED_DESTROY')
+                    #with open(os.path.join(test_path, 'STATUS'), 'w') as status_file:
+                    #    status_file.write('FAILED_DESTROY')
                     destroy_stop = datetime.datetime.utcnow().timestamp()
                     update_report(test_id, {
                         'terraform_destroy_start': destroy_start,
@@ -723,8 +723,8 @@ def run_test(test_path):
             (destroy_activity_id, destroy_status) = do_destroy(
                 test_id, url, workspace_id)
             if destroy_activity_id:
-                with open(os.path.join(test_path, 'STATUS'), 'w') as status_file:
-                    status_file.write('DESTROYED')
+                #with open(os.path.join(test_path, 'STATUS'), 'w') as status_file:
+                #    status_file.write('DESTROYED')
                 destroy_stop = datetime.datetime.utcnow().timestamp()
                 update_report(test_id, {
                     'terraform_destroy_start': destroy_start,
@@ -737,8 +737,8 @@ def run_test(test_path):
                 update_log = {'terraform_apply_log': log, }
                 update_report(test_id, update_log)
             else:
-                with open(os.path.join(test_path, 'STATUS'), 'w') as status_file:
-                    status_file.write('FAILED_DESTROY')
+                #with open(os.path.join(test_path, 'STATUS'), 'w') as status_file:
+                #    status_file.write('FAILED_DESTROY')
                 destroy_stop = datetime.datetime.utcnow().timestamp()
                 update_report(test_id, {
                     'terraform_destroy_start': destroy_start,
